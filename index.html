@@ -108,36 +108,67 @@ const firebaseConfig = {
   }
 
   function joinGame() {
-    const name = document.getElementById('playerName').value.trim();
-    if (!name) return alert('Enter a name');
+  const name = document.getElementById('playerName').value.trim();
+  if (!name) return alert('Enter a name');
 
-    const playerRef = sessionRef.child(`players/${playerId}`);
-    playerRef.set({
-      name: name,
-      score: 0,
-      current_answer: null,
-      answered_at: null
-    }).then(() => {
-      // Auto-remove on browser disconnect
-      playerRef.onDisconnect().remove();
-      listenSession();
+  const playerRef = sessionRef.child(`players/${playerId}`);
+  playerRef.set({
+    name: name,
+    score: 0,
+    current_answer: null,
+    answered_at: null
+  }).then(() => {
+    playerRef.onDisconnect().remove();
+    listenSession();
+    // Transition to waiting screen immediately upon successful write
+    showScreen('screenWait');
+  }).catch(err => {
+    alert("Connection error: " + err.message);
+  });
+}
+
+function listenSession() {
+  sessionRef.on('value', snapshot => {
+    const data = snapshot.val();
+    if (!data) return;
+
+    // 1. Lobby or idle
+    if (data.status === 'lobby' || !data.status) {
       showScreen('screenWait');
-    });
-  }
+      document.getElementById('waitMsg').innerText = "Waiting for Host to start...";
+      return;
+    }
 
-  function listenSession() {
-    // Listen for room updates
-    sessionRef.on('value', snapshot => {
-      const data = snapshot.val();
-      if (!data) return;
+    // 2. Sync player score
+    if (data.players && data.players[playerId]) {
+      currentScore = data.players[playerId].score || 0;
+      document.getElementById('displayScore').innerText = `Score: ${currentScore}`;
+    }
 
-      // Handle room reset by host
-      if (data.status === 'lobby') {
-        showScreen('screenWait');
-        document.getElementById('waitMsg').innerText = "Waiting for next game...";
-        return;
+    // 3. Active round
+    if (data.status === 'active' && data.question) {
+      const q = data.question;
+      if (!activeQuestion || activeQuestion.prompt !== q.prompt) {
+        activeQuestion = q;
+        hasSubmittedThisRound = false;
+        renderChoices(q, data.current_round);
+        showScreen('screenPlay');
       }
+    }
 
+    // 4. Round Over / Intermission
+    if (data.status === 'round_over') {
+      if (hasSubmittedThisRound) {
+        document.getElementById('feedbackTitle').innerText = "Round Finished";
+        document.getElementById('feedbackSub').innerText = "Look at the main screen for results!";
+        showScreen('screenFeedback');
+      } else {
+        document.getElementById('waitMsg').innerText = "Round in progress. Get ready for next question!";
+        showScreen('screenWait');
+      }
+    }
+  });
+}
       // Sync player score
       if (data.players && data.players[playerId]) {
         currentScore = data.players[playerId].score || 0;
