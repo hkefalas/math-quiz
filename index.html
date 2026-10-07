@@ -23,7 +23,6 @@
     .card { background: var(--card-bg); width: 100%; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
     input { width: 100%; background: #334155; color: #fff; border: 1px solid #475569; padding: 14px; border-radius: 8px; font-size: 18px; margin: 16px 0; text-align: center; }
     button.btn-primary { width: 100%; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: 700; background: var(--accent); color: #0f172a; border: none; cursor: pointer; }
-
     .status-header { display: flex; justify-content: space-between; width: 100%; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
     .question-prompt { font-size: 36px; font-weight: 800; margin: 12px 0; color: #fff; }
     .grid-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; height: 55vh; }
@@ -34,14 +33,12 @@
     .btn-choice:nth-child(2) { background: var(--c2); }
     .btn-choice:nth-child(3) { background: var(--c3); }
     .btn-choice:nth-child(4) { background: var(--c4); }
-
     .pulse { animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
   </style>
 </head>
 <body>
 
-<!-- Login Screen -->
 <div class="screen" id="screenLogin">
   <div class="card">
     <h2>Join Fast Math</h2>
@@ -50,7 +47,6 @@
   </div>
 </div>
 
-<!-- Waiting Screen -->
 <div class="screen" id="screenWait" style="display: none;">
   <div class="card">
     <h2 class="pulse" id="waitMsg">Waiting for Host...</h2>
@@ -58,7 +54,6 @@
   </div>
 </div>
 
-<!-- Active Play Screen -->
 <div class="screen" id="screenPlay" style="display: none;">
   <div class="status-header">
     <span id="displayScore">Score: 0</span>
@@ -68,7 +63,6 @@
   <div class="grid-choices" id="choicesContainer"></div>
 </div>
 
-<!-- Feedback Screen -->
 <div class="screen" id="screenFeedback" style="display: none;">
   <div class="card">
     <h2 id="feedbackTitle">Submitted!</h2>
@@ -77,15 +71,15 @@
 </div>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyAckpLVtQWVVd1zJZtQJGboWxLw9cIZO_0",
-  authDomain: "classroom-fast-math.firebaseapp.com",
-  projectId: "classroom-fast-math",
-  storageBucket: "classroom-fast-math.firebasestorage.app",
-  messagingSenderId: "572365438880",
-  appId: "1:572365438880:web:cc218fbbbe7a102e232ec5"
-};
-
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    databaseURL: "YOUR_DATABASE_URL",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
@@ -102,85 +96,53 @@ const firebaseConfig = {
   }
 
   function showScreen(id) {
-    ['screenLogin', 'screenWait', 'screenPlay', 'screenFeedback'].forEach(s => {
+    const screens = ['screenLogin', 'screenWait', 'screenPlay', 'screenFeedback'];
+    screens.forEach(s => {
       document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
     });
   }
 
   function joinGame() {
-  const name = document.getElementById('playerName').value.trim();
-  if (!name) return alert('Enter a name');
-
-  const playerRef = sessionRef.child(`players/${playerId}`);
-  playerRef.set({
-    name: name,
-    score: 0,
-    current_answer: null,
-    answered_at: null
-  }).then(() => {
-    playerRef.onDisconnect().remove();
-    listenSession();
-    // Transition to waiting screen immediately upon successful write
-    showScreen('screenWait');
-  }).catch(err => {
-    alert("Connection error: " + err.message);
-  });
-}
-
-function listenSession() {
-  sessionRef.on('value', snapshot => {
-    const data = snapshot.val();
-    if (!data) return;
-
-    // 1. Lobby or idle
-    if (data.status === 'lobby' || !data.status) {
-      showScreen('screenWait');
-      document.getElementById('waitMsg').innerText = "Waiting for Host to start...";
+    const nameInput = document.getElementById('playerName');
+    const name = nameInput.value.trim();
+    if (!name) {
+      alert('Please enter a name');
       return;
     }
 
-    // 2. Sync player score
-    if (data.players && data.players[playerId]) {
-      currentScore = data.players[playerId].score || 0;
-      document.getElementById('displayScore').innerText = `Score: ${currentScore}`;
-    }
+    const playerRef = sessionRef.child('players/' + playerId);
+    playerRef.set({
+      name: name,
+      score: 0,
+      current_answer: null,
+      answered_at: null
+    }).then(() => {
+      playerRef.onDisconnect().remove();
+      listenSession();
+      showScreen('screenWait');
+    }).catch(err => {
+      alert("Connection error: " + err.message);
+    });
+  }
 
-    // 3. Active round
-    if (data.status === 'active' && data.question) {
-      const q = data.question;
-      if (!activeQuestion || activeQuestion.prompt !== q.prompt) {
-        activeQuestion = q;
-        hasSubmittedThisRound = false;
-        renderChoices(q, data.current_round);
-        showScreen('screenPlay');
-      }
-    }
+  function listenSession() {
+    sessionRef.on('value', snapshot => {
+      const data = snapshot.val();
+      if (!data) return;
 
-    // 4. Round Over / Intermission
-    if (data.status === 'round_over') {
-      if (hasSubmittedThisRound) {
-        document.getElementById('feedbackTitle').innerText = "Round Finished";
-        document.getElementById('feedbackSub').innerText = "Look at the main screen for results!";
-        showScreen('screenFeedback');
-      } else {
-        document.getElementById('waitMsg').innerText = "Round in progress. Get ready for next question!";
+      if (data.status === 'lobby' || !data.status) {
         showScreen('screenWait');
+        document.getElementById('waitMsg').innerText = "Waiting for host to start...";
+        return;
       }
-    }
-  });
-}
-      // Sync player score
+
       if (data.players && data.players[playerId]) {
         currentScore = data.players[playerId].score || 0;
-        document.getElementById('displayScore').innerText = `Score: ${currentScore}`;
+        document.getElementById('displayScore').innerText = 'Score: ' + currentScore;
       }
 
-      // Handle active state
-      if (data.status === 'active') {
+      if (data.status === 'active' && data.question) {
         const q = data.question;
-        if (!q) return;
-
-        // Check if new round started
         if (!activeQuestion || activeQuestion.prompt !== q.prompt) {
           activeQuestion = q;
           hasSubmittedThisRound = false;
@@ -189,16 +151,21 @@ function listenSession() {
         }
       }
 
-      // Handle round completion
-      if (data.status === 'round_over' && hasSubmittedThisRound) {
-        document.getElementById('feedbackTitle').innerText = "Round Finished";
-        document.getElementById('feedbackSub').innerText = "Look at the main screen for results!";
+      if (data.status === 'round_over') {
+        if (hasSubmittedThisRound) {
+          document.getElementById('feedbackTitle').innerText = "Round Finished";
+          document.getElementById('feedbackSub').innerText = "Check the host screen for results!";
+          showScreen('screenFeedback');
+        } else {
+          document.getElementById('waitMsg').innerText = "Round in progress. Next question starting soon...";
+          showScreen('screenWait');
+        }
       }
     });
   }
 
   function renderChoices(question, roundNum) {
-    document.getElementById('displayRound').innerText = `Round: ${roundNum}`;
+    document.getElementById('displayRound').innerText = 'Round: ' + roundNum;
     document.getElementById('promptText').innerText = question.prompt;
     const container = document.getElementById('choicesContainer');
     container.innerHTML = '';
@@ -216,15 +183,16 @@ function listenSession() {
     if (hasSubmittedThisRound) return;
     hasSubmittedThisRound = true;
 
-    // Disable buttons instantly for feedback
-    document.querySelectorAll('.btn-choice').forEach(b => b.disabled = true);
+    document.querySelectorAll('.btn-choice').forEach(b => {
+      b.disabled = true;
+    });
 
-    sessionRef.child(`players/${playerId}`).update({
+    sessionRef.child('players/' + playerId).update({
       current_answer: choice,
       answered_at: Date.now()
     }).then(() => {
       document.getElementById('feedbackTitle').innerText = "Answer Sent!";
-      document.getElementById('feedbackSub').innerText = `You locked in: ${choice}`;
+      document.getElementById('feedbackSub').innerText = "Locked in: " + choice;
       showScreen('screenFeedback');
     });
   }
