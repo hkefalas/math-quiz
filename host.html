@@ -27,9 +27,9 @@
     button.danger { background: var(--red); color: #fff; }
     .timer-bar-wrap { width: 100%; height: 16px; background: #334155; border-radius: 8px; overflow: hidden; margin: 16px 0; }
     .timer-bar { height: 100%; width: 100%; background: var(--accent); transition: width 0.1s linear; }
-    .question-prompt { font-size: 56px; font-weight: 800; text-align: center; margin: 24px 0; color: #fff; }
+    .question-prompt { font-size: 52px; font-weight: 800; text-align: center; margin: 24px 0; color: #fff; }
     .choices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .choice-box { background: #334155; padding: 24px; border-radius: 10px; font-size: 32px; font-weight: 700; text-align: center; }
+    .choice-box { background: #334155; padding: 20px; border-radius: 10px; font-size: 28px; font-weight: 700; text-align: center; }
     .choice-box.correct { background: var(--green); color: #0f172a; }
     .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
     .leaderboard-table th, .leaderboard-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #334155; }
@@ -45,21 +45,21 @@
   <div class="card">
     <h2>Host Controls</h2>
     <div class="controls">
-      <label for="opType">Operation:</label>
+      <label for="opType">Mode:</label>
       <select id="opType">
-          <option value="mixed">Mixed Basic Operations (+, -, ×, ÷)</option>
-          <option value="+">Addition (+)</option>
-          <option value="-">Subtraction (-)</option>
-          <option value="×">Multiplication (×)</option>
-          <option value="÷">Division (÷)</option>
-          <option value="dec_to_frac">Decimal ➔ Fraction</option>
-          <option value="frac_to_dec">Fraction ➔ Decimal</option>
-          <option value="dec_to_pct">Decimal ➔ Percent</option>
-          <option value="pct_to_dec">Percent ➔ Decimal</option>
-          <option value="all_conversions">Mixed Conversions (F / D / %)</option>
+        <option value="mixed">Mixed Arithmetic (+, -, ×, ÷)</option>
+        <option value="+">Addition (+)</option>
+        <option value="-">Subtraction (-)</option>
+        <option value="×">Multiplication (×)</option>
+        <option value="÷">Division (÷)</option>
+        <option value="dec_to_frac">Decimal ➔ Fraction</option>
+        <option value="frac_to_dec">Fraction ➔ Decimal</option>
+        <option value="dec_to_pct">Decimal ➔ Percent</option>
+        <option value="pct_to_dec">Percent ➔ Decimal</option>
+        <option value="all_conversions">Mixed Conversions (F / D / %)</option>
       </select>
 
-      <label for="timerSec">Round Timer (s):</label>
+      <label for="timerSec">Timer:</label>
       <select id="timerSec">
         <option value="6">6s</option>
         <option value="8" selected>8s</option>
@@ -78,7 +78,7 @@
       <h3 id="roundTitle">Lobby - Waiting for Players</h3>
       <div id="submissionCounter" style="font-weight: bold; font-size: 18px;"></div>
     </div>
-
+    
     <div class="timer-bar-wrap" id="timerWrap" style="display: none;">
       <div class="timer-bar" id="timerBar"></div>
     </div>
@@ -95,7 +95,7 @@
           <th>Rank</th>
           <th>Student</th>
           <th>Score</th>
-          <th>Round Status</th>
+          <th>Status</th>
         </tr>
       </thead>
       <tbody id="playerTableBody"></tbody>
@@ -104,14 +104,15 @@
 </div>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyAckpLVtQWVVd1zJZtQJGboWxLw9cIZO_0",
-  authDomain: "classroom-fast-math.firebaseapp.com",
-  projectId: "classroom-fast-math",
-  storageBucket: "classroom-fast-math.firebasestorage.app",
-  messagingSenderId: "572365438880",
-  appId: "1:572365438880:web:cc218fbbbe7a102e232ec5"
-};
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    databaseURL: "YOUR_DATABASE_URL",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
@@ -124,140 +125,134 @@ const firebaseConfig = {
   let playersCache = {};
   let roundResolved = false;
 
-  // Listen to players
+  const BENCHMARKS = [
+    { frac: "1/2", dec: "0.5",  pct: "50%" },
+    { frac: "1/4", dec: "0.25", pct: "25%" },
+    { frac: "3/4", dec: "0.75", pct: "75%" },
+    { frac: "1/5", dec: "0.2",  pct: "20%" },
+    { frac: "2/5", dec: "0.4",  pct: "40%" },
+    { frac: "3/5", dec: "0.6",  pct: "60%" },
+    { frac: "4/5", dec: "0.8",  pct: "80%" },
+    { frac: "1/10", dec: "0.1", pct: "10%" },
+    { frac: "3/10", dec: "0.3", pct: "30%" },
+    { frac: "7/10", dec: "0.7", pct: "70%" },
+    { frac: "9/10", dec: "0.9", pct: "90%" },
+    { frac: "1/20", dec: "0.05", pct: "5%" },
+    { frac: "3/20", dec: "0.15", pct: "15%" },
+    { frac: "1/3",  dec: "0.33", pct: "33.3%" },
+    { frac: "2/3",  dec: "0.67", pct: "66.7%" }
+  ];
+
   sessionRef.child('players').on('value', snapshot => {
     playersCache = snapshot.val() || {};
     renderLeaderboard();
     checkAllSubmitted();
   });
 
-// Benchmark fraction pool for clean mental math operations
-const BENCHMARKS = [
-  { frac: "1/2", dec: "0.5",  pct: "50%" },
-  { frac: "1/4", dec: "0.25", pct: "25%" },
-  { frac: "3/4", dec: "0.75", pct: "75%" },
-  { frac: "1/5", dec: "0.2",  pct: "20%" },
-  { frac: "2/5", dec: "0.4",  pct: "40%" },
-  { frac: "3/5", dec: "0.6",  pct: "60%" },
-  { frac: "4/5", dec: "0.8",  pct: "80%" },
-  { frac: "1/10", dec: "0.1", pct: "10%" },
-  { frac: "3/10", dec: "0.3", pct: "30%" },
-  { frac: "7/10", dec: "0.7", pct: "70%" },
-  { frac: "9/10", dec: "0.9", pct: "90%" },
-  { frac: "1/20", dec: "0.05", pct: "5%" },
-  { frac: "3/20", dec: "0.15", pct: "15%" },
-  { frac: "1/3",  dec: "0.33", pct: "33.3%" },
-  { frac: "2/3",  dec: "0.67", pct: "66.7%" }
-];
-
-function generateQuestion(type) {
-  // Route conversion requests
-  if (['dec_to_frac', 'frac_to_dec', 'dec_to_pct', 'pct_to_dec', 'all_conversions'].includes(type)) {
-    return generateConversionQuestion(type);
-  }
-
-  // Standard arithmetic operations
-  const ops = type === 'mixed' ? ['+', '-', '×', '÷'] : [type];
-  const op = ops[Math.floor(Math.random() * ops.length)];
-  let a, b, answer;
-
-  switch (op) {
-    case '+':
-      a = Math.floor(Math.random() * 89) + 11;
-      b = Math.floor(Math.random() * 89) + 11;
-      answer = a + b;
-      break;
-    case '-':
-      a = Math.floor(Math.random() * 70) + 30;
-      b = Math.floor(Math.random() * (a - 15)) + 10;
-      answer = a - b;
-      break;
-    case '×':
-      a = Math.floor(Math.random() * 11) + 2;
-      b = Math.floor(Math.random() * 11) + 2;
-      answer = a * b;
-      break;
-    case '÷':
-      b = Math.floor(Math.random() * 10) + 2;
-      answer = Math.floor(Math.random() * 10) + 2;
-      a = b * answer;
-      break;
-  }
-
-  const distractors = new Set();
-  distractors.add(answer + 1);
-  distractors.add(answer - 1);
-  distractors.add(answer + 10);
-  while (distractors.size < 3) {
-    const offset = (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 5) + 2);
-    if (answer + offset !== answer) distractors.add(answer + offset);
-  }
-
-  const choices = Array.from(distractors).slice(0, 3);
-  choices.push(answer);
-  choices.sort(() => Math.random() - 0.5);
-
-  return {
-    prompt: `${a} ${op} ${b} = ?`,
-    correct: answer.toString(),
-    choices: choices.map(String)
-  };
-}
-
-function generateConversionQuestion(type) {
-  let mode = type;
-  if (type === 'all_conversions') {
-    const modes = ['dec_to_frac', 'frac_to_dec', 'dec_to_pct', 'pct_to_dec'];
-    mode = modes[Math.floor(Math.random() * modes.length)];
-  }
-
-  const target = BENCHMARKS[Math.floor(Math.random() * BENCHMARKS.length)];
-  let promptText = "";
-  let answerKey = "";
-  let distractorField = "";
-
-  switch (mode) {
-    case 'dec_to_frac':
-      promptText = `${target.dec} as a fraction:`;
-      answerKey = target.frac;
-      distractorField = 'frac';
-      break;
-    case 'frac_to_dec':
-      promptText = `${target.frac} as a decimal:`;
-      answerKey = target.dec;
-      distractorField = 'dec';
-      break;
-    case 'dec_to_pct':
-      promptText = `${target.dec} as a percent:`;
-      answerKey = target.pct;
-      distractorField = 'pct';
-      break;
-    case 'pct_to_dec':
-      promptText = `${target.pct} as a decimal:`;
-      answerKey = target.dec;
-      distractorField = 'dec';
-      break;
-  }
-
-  // Draw 3 plausible distractors from the benchmark pool
-  const distractors = new Set();
-  while (distractors.size < 3) {
-    const cand = BENCHMARKS[Math.floor(Math.random() * BENCHMARKS.length)][distractorField];
-    if (cand !== answerKey) {
-      distractors.add(cand);
+  function generateQuestion(type) {
+    if (['dec_to_frac', 'frac_to_dec', 'dec_to_pct', 'pct_to_dec', 'all_conversions'].includes(type)) {
+      return generateConversionQuestion(type);
     }
+
+    const ops = type === 'mixed' ? ['+', '-', '×', '÷'] : [type];
+    const op = ops[Math.floor(Math.random() * ops.length)];
+    let a, b, answer;
+
+    switch (op) {
+      case '+':
+        a = Math.floor(Math.random() * 89) + 11;
+        b = Math.floor(Math.random() * 89) + 11;
+        answer = a + b;
+        break;
+      case '-':
+        a = Math.floor(Math.random() * 70) + 30;
+        b = Math.floor(Math.random() * (a - 15)) + 10;
+        answer = a - b;
+        break;
+      case '×':
+        a = Math.floor(Math.random() * 11) + 2;
+        b = Math.floor(Math.random() * 11) + 2;
+        answer = a * b;
+        break;
+      case '÷':
+        b = Math.floor(Math.random() * 10) + 2;
+        answer = Math.floor(Math.random() * 10) + 2;
+        a = b * answer;
+        break;
+    }
+
+    const distractors = new Set();
+    distractors.add(answer + 1);
+    distractors.add(answer - 1);
+    distractors.add(answer + 10);
+    while (distractors.size < 3) {
+      const offset = (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 5) + 2);
+      if (answer + offset !== answer) distractors.add(answer + offset);
+    }
+
+    const choices = Array.from(distractors).slice(0, 3);
+    choices.push(answer);
+    choices.sort(() => Math.random() - 0.5);
+
+    return {
+      prompt: a + ' ' + op + ' ' + b + ' = ?',
+      correct: answer.toString(),
+      choices: choices.map(String)
+    };
   }
 
-  const choices = Array.from(distractors);
-  choices.push(answerKey);
-  choices.sort(() => Math.random() - 0.5);
+  function generateConversionQuestion(type) {
+    let mode = type;
+    if (type === 'all_conversions') {
+      const modes = ['dec_to_frac', 'frac_to_dec', 'dec_to_pct', 'pct_to_dec'];
+      mode = modes[Math.floor(Math.random() * modes.length)];
+    }
 
-  return {
-    prompt: promptText,
-    correct: answerKey,
-    choices: choices
-  };
-}
+    const target = BENCHMARKS[Math.floor(Math.random() * BENCHMARKS.length)];
+    let promptText = "";
+    let answerKey = "";
+    let distractorField = "";
+
+    switch (mode) {
+      case 'dec_to_frac':
+        promptText = target.dec + " as a fraction:";
+        answerKey = target.frac;
+        distractorField = 'frac';
+        break;
+      case 'frac_to_dec':
+        promptText = target.frac + " as a decimal:";
+        answerKey = target.dec;
+        distractorField = 'dec';
+        break;
+      case 'dec_to_pct':
+        promptText = target.dec + " as a percent:";
+        answerKey = target.pct;
+        distractorField = 'pct';
+        break;
+      case 'pct_to_dec':
+        promptText = target.pct + " as a decimal:";
+        answerKey = target.dec;
+        distractorField = 'dec';
+        break;
+    }
+
+    const distractors = new Set();
+    while (distractors.size < 3) {
+      const cand = BENCHMARKS[Math.floor(Math.random() * BENCHMARKS.length)][distractorField];
+      if (cand !== answerKey) {
+        distractors.add(cand);
+      }
+    }
+
+    const choices = Array.from(distractors);
+    choices.push(answerKey);
+    choices.sort(() => Math.random() - 0.5);
+
+    return {
+      prompt: promptText,
+      correct: answerKey,
+      choices: choices
+    };
   }
 
   function startQuiz() {
@@ -275,11 +270,10 @@ function generateConversionQuestion(type) {
     const opType = document.getElementById('opType').value;
     activeQuestion = generateQuestion(opType);
 
-    // Reset current answers for all active players
     const updates = {};
     Object.keys(playersCache).forEach(pid => {
-      updates[`players/${pid}/current_answer`] = null;
-      updates[`players/${pid}/answered_at`] = null;
+      updates['players/' + pid + '/current_answer'] = null;
+      updates['players/' + pid + '/answered_at'] = null;
     });
 
     updates['status'] = 'active';
@@ -316,11 +310,10 @@ function generateConversionQuestion(type) {
     const playerIds = Object.keys(playersCache);
     if (playerIds.length === 0) return;
 
-    const allAnswered = playerIds.every(id => playersCache[id].current_answer !== null && playersCache[id].current_answer !== undefined);
     const answeredCount = playerIds.filter(id => playersCache[id].current_answer !== null && playersCache[id].current_answer !== undefined).length;
-    document.getElementById('submissionCounter').innerText = `Answered: ${answeredCount}/${playerIds.length}`;
+    document.getElementById('submissionCounter').innerText = 'Answered: ' + answeredCount + '/' + playerIds.length;
 
-    if (allAnswered && playerIds.length > 0) {
+    if (answeredCount === playerIds.length && playerIds.length > 0) {
       clearInterval(timerInterval);
       resolveRound();
     }
@@ -330,19 +323,17 @@ function generateConversionQuestion(type) {
     if (roundResolved) return;
     roundResolved = true;
 
-    // Calculate Scores based on speed decay
     const updates = {};
-    const startTime = activeQuestion ? activeQuestion.startTime || (Date.now() - (roundDuration * 1000)) : Date.now();
-
+    const startTime = (activeQuestion && activeQuestion.startTime) ? activeQuestion.startTime : (Date.now() - (roundDuration * 1000));
+    
     Object.keys(playersCache).forEach(pid => {
       const p = playersCache[pid];
       if (p.current_answer === activeQuestion.correct) {
         const responseTime = Math.max(0, (p.answered_at || Date.now()) - startTime);
         const timeLimitMs = roundDuration * 1000;
-        // Formula: Points = 1000 * (1 - responseTime / (2 * timeLimit))
         const pts = Math.round(1000 * (1 - (responseTime / (2 * timeLimitMs))));
         const currentScore = p.score || 0;
-        updates[`players/${pid}/score`] = currentScore + Math.max(500, pts);
+        updates['players/' + pid + '/score'] = currentScore + Math.max(500, pts);
       }
     });
 
@@ -353,10 +344,10 @@ function generateConversionQuestion(type) {
   }
 
   function renderActiveRound() {
-    document.getElementById('roundTitle').innerText = `Round ${currentRound}`;
+    document.getElementById('roundTitle').innerText = 'Round ' + currentRound;
     document.getElementById('timerWrap').style.display = 'block';
     document.getElementById('questionPrompt').innerText = activeQuestion.prompt;
-
+    
     const grid = document.getElementById('choicesGrid');
     grid.innerHTML = '';
     activeQuestion.choices.forEach(ch => {
@@ -368,7 +359,7 @@ function generateConversionQuestion(type) {
   }
 
   function renderResolvedRound() {
-    document.getElementById('roundTitle').innerText = `Round ${currentRound} - Results`;
+    document.getElementById('roundTitle').innerText = 'Round ' + currentRound + ' - Results';
     document.getElementById('timerBar').style.width = '0%';
     const boxes = document.querySelectorAll('.choice-box');
     boxes.forEach(box => {
@@ -400,34 +391,32 @@ function generateConversionQuestion(type) {
     });
   }
 
-function resetQuiz() {
-  if (!confirm("Reset the room? This clears all players and returns to lobby.")) return;
-  clearInterval(timerInterval);
-  roundResolved = false;
-  currentRound = 0;
-  activeQuestion = null;
+  function resetQuiz() {
+    if (!confirm("Reset the room? This clears all players and returns to lobby.")) return;
+    clearInterval(timerInterval);
+    roundResolved = false;
+    currentRound = 0;
+    activeQuestion = null;
 
-  // Clear UI elements immediately
-  document.getElementById('roundTitle').innerText = "Lobby - Waiting for Players";
-  document.getElementById('questionPrompt').innerText = "Fast Math Operations";
-  document.getElementById('choicesGrid').innerHTML = '';
-  document.getElementById('timerWrap').style.display = 'none';
-  document.getElementById('submissionCounter').innerText = '';
-  document.getElementById('btnStart').style.display = 'inline-block';
-  document.getElementById('btnNext').style.display = 'none';
+    document.getElementById('roundTitle').innerText = "Lobby - Waiting for Players";
+    document.getElementById('questionPrompt').innerText = "Fast Math Operations";
+    document.getElementById('choicesGrid').innerHTML = '';
+    document.getElementById('timerWrap').style.display = 'none';
+    document.getElementById('submissionCounter').innerText = '';
+    document.getElementById('btnStart').style.display = 'inline-block';
+    document.getElementById('btnNext').style.display = 'none';
 
-  // Explicitly set clean primitive defaults
-  sessionRef.set({
-    status: 'lobby',
-    current_round: 0,
-    round_duration: parseInt(document.getElementById('timerSec').value, 10) || 8,
-    round_start_time: 0,
-    question: false,
-    players: false
-  }).catch(err => {
-    console.error("Reset failed:", err);
-  });
-}
+    sessionRef.set({
+      status: 'lobby',
+      current_round: 0,
+      round_duration: parseInt(document.getElementById('timerSec').value, 10) || 8,
+      round_start_time: 0,
+      question: false,
+      players: false
+    }).catch(err => {
+      console.error("Reset failed:", err);
+    });
+  }
 </script>
 </body>
 </html>
