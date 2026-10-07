@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Fast Math - Student</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --accent: #38bdf8;
+      --c1: #e11d48;
+      --c2: #2563eb;
+      --c3: #d97706;
+      --c4: #059669;
+    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); margin: 0; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; touch-action: manipulation; }
+    .screen { width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .card { background: var(--card-bg); width: 100%; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    input { width: 100%; background: #334155; color: #fff; border: 1px solid #475569; padding: 14px; border-radius: 8px; font-size: 18px; margin: 16px 0; text-align: center; }
+    button.btn-primary { width: 100%; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: 700; background: var(--accent); color: #0f172a; border: none; cursor: pointer; }
+
+    .status-header { display: flex; justify-content: space-between; width: 100%; font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .question-prompt { font-size: 36px; font-weight: 800; margin: 12px 0; color: #fff; }
+    .grid-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; height: 55vh; }
+    .btn-choice { border: none; border-radius: 12px; font-size: 32px; font-weight: bold; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.1s; }
+    .btn-choice:active { opacity: 0.7; }
+    .btn-choice:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-choice:nth-child(1) { background: var(--c1); }
+    .btn-choice:nth-child(2) { background: var(--c2); }
+    .btn-choice:nth-child(3) { background: var(--c3); }
+    .btn-choice:nth-child(4) { background: var(--c4); }
+
+    .pulse { animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+  </style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div class="screen" id="screenLogin">
+  <div class="card">
+    <h2>Join Fast Math</h2>
+    <input type="text" id="playerName" placeholder="Enter your name" maxlength="15" autofocus>
+    <button class="btn-primary" onclick="joinGame()">Join Game</button>
+  </div>
+</div>
+
+<!-- Waiting Screen -->
+<div class="screen" id="screenWait" style="display: none;">
+  <div class="card">
+    <h2 class="pulse" id="waitMsg">Waiting for Host...</h2>
+    <p>Get ready for speed calculations!</p>
+  </div>
+</div>
+
+<!-- Active Play Screen -->
+<div class="screen" id="screenPlay" style="display: none;">
+  <div class="status-header">
+    <span id="displayScore">Score: 0</span>
+    <span id="displayRound">Round: 1</span>
+  </div>
+  <div class="question-prompt" id="promptText">--</div>
+  <div class="grid-choices" id="choicesContainer"></div>
+</div>
+
+<!-- Feedback Screen -->
+<div class="screen" id="screenFeedback" style="display: none;">
+  <div class="card">
+    <h2 id="feedbackTitle">Submitted!</h2>
+    <p id="feedbackSub">Waiting for round to resolve...</p>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAckpLVtQWVVd1zJZtQJGboWxLw9cIZO_0",
+  authDomain: "classroom-fast-math.firebaseapp.com",
+  projectId: "classroom-fast-math",
+  storageBucket: "classroom-fast-math.firebasestorage.app",
+  messagingSenderId: "572365438880",
+  appId: "1:572365438880:web:cc218fbbbe7a102e232ec5"
+};
+
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const sessionRef = db.ref('fast_math_session');
+
+  let playerId = localStorage.getItem('fast_math_uid');
+  let currentScore = 0;
+  let hasSubmittedThisRound = false;
+  let activeQuestion = null;
+
+  if (!playerId) {
+    playerId = 'p_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('fast_math_uid', playerId);
+  }
+
+  function showScreen(id) {
+    ['screenLogin', 'screenWait', 'screenPlay', 'screenFeedback'].forEach(s => {
+      document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
+    });
+  }
+
+  function joinGame() {
+    const name = document.getElementById('playerName').value.trim();
+    if (!name) return alert('Enter a name');
+
+    const playerRef = sessionRef.child(`players/${playerId}`);
+    playerRef.set({
+      name: name,
+      score: 0,
+      current_answer: null,
+      answered_at: null
+    }).then(() => {
+      // Auto-remove on browser disconnect
+      playerRef.onDisconnect().remove();
+      listenSession();
+      showScreen('screenWait');
+    });
+  }
+
+  function listenSession() {
+    // Listen for room updates
+    sessionRef.on('value', snapshot => {
+      const data = snapshot.val();
+      if (!data) return;
+
+      // Handle room reset by host
+      if (data.status === 'lobby') {
+        showScreen('screenWait');
+        document.getElementById('waitMsg').innerText = "Waiting for next game...";
+        return;
+      }
+
+      // Sync player score
+      if (data.players && data.players[playerId]) {
+        currentScore = data.players[playerId].score || 0;
+        document.getElementById('displayScore').innerText = `Score: ${currentScore}`;
+      }
+
+      // Handle active state
+      if (data.status === 'active') {
+        const q = data.question;
+        if (!q) return;
+
+        // Check if new round started
+        if (!activeQuestion || activeQuestion.prompt !== q.prompt) {
+          activeQuestion = q;
+          hasSubmittedThisRound = false;
+          renderChoices(q, data.current_round);
+          showScreen('screenPlay');
+        }
+      }
+
+      // Handle round completion
+      if (data.status === 'round_over' && hasSubmittedThisRound) {
+        document.getElementById('feedbackTitle').innerText = "Round Finished";
+        document.getElementById('feedbackSub').innerText = "Look at the main screen for results!";
+      }
+    });
+  }
+
+  function renderChoices(question, roundNum) {
+    document.getElementById('displayRound').innerText = `Round: ${roundNum}`;
+    document.getElementById('promptText').innerText = question.prompt;
+    const container = document.getElementById('choicesContainer');
+    container.innerHTML = '';
+
+    question.choices.forEach(val => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-choice';
+      btn.innerText = val;
+      btn.onclick = () => submitAnswer(val);
+      container.appendChild(btn);
+    });
+  }
+
+  function submitAnswer(choice) {
+    if (hasSubmittedThisRound) return;
+    hasSubmittedThisRound = true;
+
+    // Disable buttons instantly for feedback
+    document.querySelectorAll('.btn-choice').forEach(b => b.disabled = true);
+
+    sessionRef.child(`players/${playerId}`).update({
+      current_answer: choice,
+      answered_at: Date.now()
+    }).then(() => {
+      document.getElementById('feedbackTitle').innerText = "Answer Sent!";
+      document.getElementById('feedbackSub').innerText = `You locked in: ${choice}`;
+      showScreen('screenFeedback');
+    });
+  }
+</script>
+</body>
+</html>

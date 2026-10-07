@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fast Math Quiz - Host Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --accent: #38bdf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); margin: 0; padding: 24px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 20px; }
+    .card { background: var(--card-bg); border-radius: 12px; padding: 24px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); }
+    h1, h2, h3 { margin-top: 0; }
+    .controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    select, button, input { background: #334155; color: #fff; border: 1px solid #475569; padding: 10px 16px; border-radius: 8px; font-size: 16px; }
+    button { cursor: pointer; font-weight: 600; background: var(--accent); color: #0f172a; border: none; transition: opacity 0.2s; }
+    button:hover { opacity: 0.9; }
+    button.danger { background: var(--red); color: #fff; }
+    .timer-bar-wrap { width: 100%; height: 16px; background: #334155; border-radius: 8px; overflow: hidden; margin: 16px 0; }
+    .timer-bar { height: 100%; width: 100%; background: var(--accent); transition: width 0.1s linear; }
+    .question-prompt { font-size: 56px; font-weight: 800; text-align: center; margin: 24px 0; color: #fff; }
+    .choices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .choice-box { background: #334155; padding: 24px; border-radius: 10px; font-size: 32px; font-weight: 700; text-align: center; }
+    .choice-box.correct { background: var(--green); color: #0f172a; }
+    .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .leaderboard-table th, .leaderboard-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #334155; }
+    .leaderboard-table th { background: #0f172a; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .badge-ready { background: var(--green); color: #0f172a; }
+    .badge-waiting { background: var(--yellow); color: #0f172a; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card">
+    <h2>Host Controls</h2>
+    <div class="controls">
+      <label for="opType">Operation:</label>
+      <select id="opType">
+        <option value="mixed">Mixed (+, -, ×, ÷)</option>
+        <option value="+">Addition (+)</option>
+        <option value="-">Subtraction (-)</option>
+        <option value="×">Multiplication (×)</option>
+        <option value="÷">Division (÷)</option>
+      </select>
+
+      <label for="timerSec">Round Timer (s):</label>
+      <select id="timerSec">
+        <option value="6">6s</option>
+        <option value="8" selected>8s</option>
+        <option value="10">10s</option>
+        <option value="15">15s</option>
+      </select>
+
+      <button id="btnStart" onclick="startQuiz()">Start Quiz</button>
+      <button id="btnNext" onclick="nextRound()" style="display:none;">Next Question</button>
+      <button class="danger" onclick="resetQuiz()">Reset Room</button>
+    </div>
+  </div>
+
+  <div class="card" id="displayCard">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 id="roundTitle">Lobby - Waiting for Players</h3>
+      <div id="submissionCounter" style="font-weight: bold; font-size: 18px;"></div>
+    </div>
+
+    <div class="timer-bar-wrap" id="timerWrap" style="display: none;">
+      <div class="timer-bar" id="timerBar"></div>
+    </div>
+
+    <div class="question-prompt" id="questionPrompt">Fast Math Operations</div>
+    <div class="choices-grid" id="choicesGrid"></div>
+  </div>
+
+  <div class="card">
+    <h3>Live Standings (<span id="playerCount">0</span> Joined)</h3>
+    <table class="leaderboard-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Student</th>
+          <th>Score</th>
+          <th>Round Status</th>
+        </tr>
+      </thead>
+      <tbody id="playerTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAckpLVtQWVVd1zJZtQJGboWxLw9cIZO_0",
+  authDomain: "classroom-fast-math.firebaseapp.com",
+  projectId: "classroom-fast-math",
+  storageBucket: "classroom-fast-math.firebasestorage.app",
+  messagingSenderId: "572365438880",
+  appId: "1:572365438880:web:cc218fbbbe7a102e232ec5"
+};
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const sessionRef = db.ref('fast_math_session');
+
+  let currentRound = 0;
+  let timerInterval = null;
+  let activeQuestion = null;
+  let roundDuration = 8;
+  let playersCache = {};
+  let roundResolved = false;
+
+  // Listen to players
+  sessionRef.child('players').on('value', snapshot => {
+    playersCache = snapshot.val() || {};
+    renderLeaderboard();
+    checkAllSubmitted();
+  });
+
+  // Math Generator
+  function generateQuestion(type) {
+    const ops = type === 'mixed' ? ['+', '-', '×', '÷'] : [type];
+    const op = ops[Math.floor(Math.random() * ops.length)];
+    let a, b, answer;
+
+    switch (op) {
+      case '+':
+        a = Math.floor(Math.random() * 89) + 11;
+        b = Math.floor(Math.random() * 89) + 11;
+        answer = a + b;
+        break;
+      case '-':
+        a = Math.floor(Math.random() * 70) + 30;
+        b = Math.floor(Math.random() * (a - 15)) + 10;
+        answer = a - b;
+        break;
+      case '×':
+        a = Math.floor(Math.random() * 11) + 2;
+        b = Math.floor(Math.random() * 11) + 2;
+        answer = a * b;
+        break;
+      case '÷':
+        b = Math.floor(Math.random() * 10) + 2;
+        answer = Math.floor(Math.random() * 10) + 2;
+        a = b * answer;
+        break;
+    }
+
+    const distractors = new Set();
+    distractors.add(answer + 1);
+    distractors.add(answer - 1);
+    distractors.add(answer + 10);
+    while (distractors.size < 3) {
+      const offset = (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 5) + 2);
+      if (answer + offset !== answer) distractors.add(answer + offset);
+    }
+
+    const choices = Array.from(distractors).slice(0, 3);
+    choices.push(answer);
+    choices.sort(() => Math.random() - 0.5);
+
+    return {
+      prompt: `${a} ${op} ${b} = ?`,
+      correct: answer.toString(),
+      choices: choices.map(String)
+    };
+  }
+
+  function startQuiz() {
+    currentRound = 0;
+    document.getElementById('btnStart').style.display = 'none';
+    document.getElementById('btnNext').style.display = 'inline-block';
+    nextRound();
+  }
+
+  function nextRound() {
+    clearInterval(timerInterval);
+    roundResolved = false;
+    currentRound++;
+    roundDuration = parseInt(document.getElementById('timerSec').value, 10);
+    const opType = document.getElementById('opType').value;
+    activeQuestion = generateQuestion(opType);
+
+    // Reset current answers for all active players
+    const updates = {};
+    Object.keys(playersCache).forEach(pid => {
+      updates[`players/${pid}/current_answer`] = null;
+      updates[`players/${pid}/answered_at`] = null;
+    });
+
+    updates['status'] = 'active';
+    updates['current_round'] = currentRound;
+    updates['round_duration'] = roundDuration;
+    updates['round_start_time'] = Date.now();
+    updates['question'] = activeQuestion;
+
+    sessionRef.update(updates).then(() => {
+      renderActiveRound();
+      runTimer();
+    });
+  }
+
+  function runTimer() {
+    const start = Date.now();
+    const totalMs = roundDuration * 1000;
+    const bar = document.getElementById('timerBar');
+
+    timerInterval = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const pct = Math.max(0, 100 - (elapsed / totalMs) * 100);
+      bar.style.width = pct + '%';
+
+      if (elapsed >= totalMs) {
+        clearInterval(timerInterval);
+        resolveRound();
+      }
+    }, 50);
+  }
+
+  function checkAllSubmitted() {
+    if (roundResolved) return;
+    const playerIds = Object.keys(playersCache);
+    if (playerIds.length === 0) return;
+
+    const allAnswered = playerIds.every(id => playersCache[id].current_answer !== null && playersCache[id].current_answer !== undefined);
+    const answeredCount = playerIds.filter(id => playersCache[id].current_answer !== null && playersCache[id].current_answer !== undefined).length;
+    document.getElementById('submissionCounter').innerText = `Answered: ${answeredCount}/${playerIds.length}`;
+
+    if (allAnswered && playerIds.length > 0) {
+      clearInterval(timerInterval);
+      resolveRound();
+    }
+  }
+
+  function resolveRound() {
+    if (roundResolved) return;
+    roundResolved = true;
+
+    // Calculate Scores based on speed decay
+    const updates = {};
+    const startTime = activeQuestion ? activeQuestion.startTime || (Date.now() - (roundDuration * 1000)) : Date.now();
+
+    Object.keys(playersCache).forEach(pid => {
+      const p = playersCache[pid];
+      if (p.current_answer === activeQuestion.correct) {
+        const responseTime = Math.max(0, (p.answered_at || Date.now()) - startTime);
+        const timeLimitMs = roundDuration * 1000;
+        // Formula: Points = 1000 * (1 - responseTime / (2 * timeLimit))
+        const pts = Math.round(1000 * (1 - (responseTime / (2 * timeLimitMs))));
+        const currentScore = p.score || 0;
+        updates[`players/${pid}/score`] = currentScore + Math.max(500, pts);
+      }
+    });
+
+    updates['status'] = 'round_over';
+    sessionRef.update(updates).then(() => {
+      renderResolvedRound();
+    });
+  }
+
+  function renderActiveRound() {
+    document.getElementById('roundTitle').innerText = `Round ${currentRound}`;
+    document.getElementById('timerWrap').style.display = 'block';
+    document.getElementById('questionPrompt').innerText = activeQuestion.prompt;
+
+    const grid = document.getElementById('choicesGrid');
+    grid.innerHTML = '';
+    activeQuestion.choices.forEach(ch => {
+      const div = document.createElement('div');
+      div.className = 'choice-box';
+      div.innerText = ch;
+      grid.appendChild(div);
+    });
+  }
+
+  function renderResolvedRound() {
+    document.getElementById('roundTitle').innerText = `Round ${currentRound} - Results`;
+    document.getElementById('timerBar').style.width = '0%';
+    const boxes = document.querySelectorAll('.choice-box');
+    boxes.forEach(box => {
+      if (box.innerText === activeQuestion.correct) {
+        box.classList.add('correct');
+      }
+    });
+  }
+
+  function renderLeaderboard() {
+    const list = Object.keys(playersCache).map(id => ({ id, ...playersCache[id] }));
+    list.sort((a, b) => (b.score || 0) - (a.score || 0));
+    document.getElementById('playerCount').innerText = list.length;
+
+    const tbody = document.getElementById('playerTableBody');
+    tbody.innerHTML = '';
+    list.forEach((p, idx) => {
+      const tr = document.createElement('tr');
+      const hasAnswered = p.current_answer !== null && p.current_answer !== undefined;
+      const statusBadge = hasAnswered ? '<span class="badge badge-ready">Done</span>' : '<span class="badge badge-waiting">Thinking</span>';
+
+      tr.innerHTML = `
+        <td>#${idx + 1}</td>
+        <td>${p.name || 'Anonymous'}</td>
+        <td>${p.score || 0}</td>
+        <td>${statusBadge}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function resetQuiz() {
+    if (!confirm("Reset the room? This clears all players and returns to lobby.")) return;
+    clearInterval(timerInterval);
+    sessionRef.set({
+      status: 'lobby',
+      current_round: 0,
+      question: null,
+      players: {}
+    }).then(() => {
+      location.reload();
+    });
+  }
+</script>
+</body>
+</html>
