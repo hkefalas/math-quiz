@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Fast Math - Solo Practice</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --accent: #38bdf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --c1: #e11d48;
+      --c2: #2563eb;
+      --c3: #d97706;
+      --c4: #059669;
+    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); margin: 0; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; touch-action: manipulation; }
+    .screen { width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .card { background: var(--card-bg); width: 100%; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    h1, h2 { margin-top: 0; }
+    label { display: block; text-align: left; font-weight: 600; margin: 12px 0 6px; }
+    select, button { width: 100%; padding: 14px; border-radius: 8px; font-size: 16px; margin-bottom: 12px; }
+    select { background: #334155; color: #fff; border: 1px solid #475569; }
+    button.btn-primary { font-size: 18px; font-weight: 700; background: var(--accent); color: #0f172a; border: none; cursor: pointer; }
+    .status-header { display: flex; justify-content: space-between; width: 100%; font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .timer-bar-wrap { width: 100%; height: 10px; background: #334155; border-radius: 5px; overflow: hidden; margin-bottom: 16px; }
+    .timer-bar { height: 100%; width: 100%; background: var(--accent); transition: width 0.05s linear; }
+    .question-prompt { font-size: 34px; font-weight: 800; min-height: 60px; display: flex; align-items: center; justify-content: center; color: #fff; }
+    .grid-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; height: 48vh; }
+    .btn-choice { border: none; border-radius: 12px; font-size: 28px; font-weight: bold; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.05s; }
+    .btn-choice:active { transform: scale(0.97); }
+    .btn-choice:nth-child(1) { background: var(--c1); }
+    .btn-choice:nth-child(2) { background: var(--c2); }
+    .btn-choice:nth-child(3) { background: var(--c3); }
+    .btn-choice:nth-child(4) { background: var(--c4); }
+    .btn-choice.correct { background: var(--green) !important; color: #0f172a !important; }
+    .btn-choice.wrong { background: var(--red) !important; opacity: 0.6; }
+    .stats-summary { display: flex; justify-content: space-around; margin: 20px 0; }
+    .stat-box { font-size: 20px; font-weight: bold; }
+    .stat-label { font-size: 13px; color: #94a3b8; font-weight: normal; }
+  </style>
+</head>
+<body>
+
+<!-- Setup Screen -->
+<div class="screen" id="screenSetup">
+  <div class="card">
+    <h2>Solo Math Practice</h2>
+    
+    <label for="practiceMode">Operation / Skill:</label>
+    <select id="practiceMode">
+      <option value="mixed">Mixed Arithmetic (+, -, ×, ÷)</option>
+      <option value="+">Addition (+)</option>
+      <option value="-">Subtraction (-)</option>
+      <option value="×">Multiplication (×)</option>
+      <option value="÷">Division (÷)</option>
+      <option value="dec_to_frac">Decimal ➔ Fraction</option>
+      <option value="frac_to_dec">Fraction ➔ Decimal</option>
+      <option value="dec_to_pct">Decimal ➔ Percent</option>
+      <option value="pct_to_dec">Percent ➔ Decimal</option>
+      <option value="all_conversions">Mixed Conversions (F / D / %)</option>
+    </select>
+
+    <label for="practiceRounds">Length:</label>
+    <select id="practiceRounds">
+      <option value="10" selected>10 Questions</option>
+      <option value="20">20 Questions</option>
+      <option value="30">30 Questions</option>
+    </select>
+
+    <label for="practiceTimer">Time Per Question:</label>
+    <select id="practiceTimer">
+      <option value="6">6 seconds (Speed)</option>
+      <option value="8" selected>8 seconds (Standard)</option>
+      <option value="12">12 seconds (Relaxed)</option>
+    </select>
+
+    <button class="btn-primary" onclick="startPractice()">Start Practice</button>
+  </div>
+</div>
+
+<!-- Active Play Screen -->
+<div class="screen" id="screenPlay" style="display: none;">
+  <div class="status-header">
+    <span id="displayScore">Score: 0</span>
+    <span id="displayProgress">Q: 1/10</span>
+  </div>
+  
+  <div class="timer-bar-wrap">
+    <div class="timer-bar" id="timerBar"></div>
+  </div>
+
+  <div class="question-prompt" id="promptText">--</div>
+  <div class="grid-choices" id="choicesContainer"></div>
+</div>
+
+<!-- End Screen -->
+<div class="screen" id="screenSummary" style="display: none;">
+  <div class="card">
+    <h2>Practice Complete!</h2>
+    <div class="stats-summary">
+      <div class="stat-box"><span id="finalScore">0</span><div class="stat-label">Final Score</div></div>
+      <div class="stat-box"><span id="finalAccuracy">0%</span><div class="stat-label">Accuracy</div></div>
+    </div>
+    <p id="bestScoreNotice" style="color: var(--accent); font-weight: bold;"></p>
+    <button class="btn-primary" onclick="returnToSetup()">Practice Again</button>
+  </div>
+</div>
+
+<script>
+  const BENCHMARKS = [
+    { frac: "1/2", dec: "0.5",  pct: "50%" },
+    { frac: "1/4", dec: "0.25", pct: "25%" },
+    { frac: "3/4", dec: "0.75", pct: "75%" },
+    { frac: "1/5", dec: "0.2",  pct: "20%" },
+    { frac: "2/5", dec: "0.4",  pct: "40%" },
+    { frac: "3/5", dec: "0.6",  pct: "60%" },
+    { frac: "4/5", dec: "0.8",  pct: "80%" },
+    { frac: "1/10", dec: "0.1", pct: "10%" },
+    { frac: "3/10", dec: "0.3", pct: "30%" },
+    { frac: "7/10", dec: "0.7", pct: "70%" },
+    { frac: "9/10", dec: "0.9", pct: "90%" },
+    { frac: "1/20", dec: "0.05", pct: "5%" },
+    { frac: "3/20", dec: "0.15", pct: "15%" },
+    { frac: "1/3",  dec: "0.33", pct: "33.3%" },
+    { frac: "2/3",  dec: "0.67", pct: "66.7%" }
+  ];
+
+  let currentQuestionIndex = 0;
+  let totalQuestions = 10;
+  let roundSeconds = 8;
+  let selectedMode = 'mixed';
+  let score = 0;
+  let correctCount = 0;
+  let activeQuestion = null;
+  let timerInterval = null;
+  let roundStartTime = 0;
+  let locked = false;
+
+  function showScreen(id) {
+    ['screenSetup', 'screenPlay', 'screenSummary'].forEach(s => {
+      document.getElementById(s).style.display = (s === id) ? 'flex' : 'none';
+    });
+  }
+
+  function startPractice() {
+    selectedMode = document.getElementById('practiceMode').value;
+    totalQuestions = parseInt(document.getElementById('practiceRounds').value, 10);
+    roundSeconds = parseInt(document.getElementById('practiceTimer').value, 10);
+    currentQuestionIndex = 0;
+    score = 0;
+    correctCount = 0;
+
+    showScreen('screenPlay');
+    nextQuestion();
+  }
+
+  function nextQuestion() {
+    if (currentQuestionIndex >= totalQuestions) {
+      finishPractice();
+      return;
+    }
+
+    currentQuestionIndex++;
+    locked = false;
+    document.getElementById('displayScore').innerText = `Score: ${score}`;
+    document.getElementById('displayProgress').innerText = `Q: ${currentQuestionIndex}/${totalQuestions}`;
+
+    activeQuestion = generateQuestion(selectedMode);
+    document.getElementById('promptText').innerText = activeQuestion.prompt;
+    
+    const container = document.getElementById('choicesContainer');
+    container.innerHTML = '';
+    activeQuestion.choices.forEach(val => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-choice';
+      btn.innerText = val;
+      btn.onclick = () => submitAnswer(val, btn);
+      container.appendChild(btn);
+    });
+
+    startTimer();
+  }
+
+  function startTimer() {
+    clearInterval(timerInterval);
+    roundStartTime = Date.now();
+    const totalMs = roundSeconds * 1000;
+    const bar = document.getElementById('timerBar');
+
+    timerInterval = setInterval(() => {
+      const elapsed = Date.now() - roundStartTime;
+      const pct = Math.max(0, 100 - (elapsed / totalMs) * 100);
+      bar.style.width = pct + '%';
+
+      if (elapsed >= totalMs) {
+        clearInterval(timerInterval);
+        handleTimeout();
+      }
+    }, 50);
+  }
+
+  function submitAnswer(choice, clickedBtn) {
+    if (locked) return;
+    locked = true;
+    clearInterval(timerInterval);
+
+    const elapsed = Date.now() - roundStartTime;
+    const isCorrect = (choice === activeQuestion.correct);
+    const buttons = document.querySelectorAll('.btn-choice');
+
+    buttons.forEach(btn => {
+      btn.disabled = true;
+      if (btn.innerText === activeQuestion.correct) btn.classList.add('correct');
+    });
+
+    if (isCorrect) {
+      correctCount++;
+      const timeLimitMs = roundSeconds * 1000;
+      const pts = Math.round(1000 * (1 - (elapsed / (2 * timeLimitMs))));
+      score += Math.max(500, pts);
+      document.getElementById('displayScore').innerText = `Score: ${score}`;
+    } else {
+      clickedBtn.classList.add('wrong');
+    }
+
+    setTimeout(nextQuestion, 1100);
+  }
+
+  function handleTimeout() {
+    if (locked) return;
+    locked = true;
+
+    const buttons = document.querySelectorAll('.btn-choice');
+    buttons.forEach(btn => {
+      btn.disabled = true;
+      if (btn.innerText === activeQuestion.correct) btn.classList.add('correct');
+    });
+
+    setTimeout(nextQuestion, 1100);
+  }
+
+  function finishPractice() {
+    clearInterval(timerInterval);
+    showScreen('screenSummary');
+    document.getElementById('finalScore').innerText = score;
+    const pct = Math.round((correctCount / totalQuestions) * 100);
+    document.getElementById('finalAccuracy').innerText = `${pct}% (${correctCount}/${totalQuestions})`;
+
+    const key = `math_best_${selectedMode}`;
+    const previousBest = parseInt(localStorage.getItem(key) || 0, 10);
+    if (score > previousBest) {
+      localStorage.setItem(key, score);
+      document.getElementById('bestScoreNotice').innerText = `New Personal Best! (Previous: ${previousBest})`;
+    } else {
+      document.getElementById('bestScoreNotice').innerText = `Personal Best: ${previousBest}`;
+    }
+  }
+
+  function returnToSetup() {
+    showScreen('screenSetup');
+  }
+
+  function generateQuestion(type) {
+    if (['dec_to_frac', 'frac_to_dec', 'dec_to_pct', 'pct_to_dec', 'all_conversions'].includes(type)) {
+      return generateConversionQuestion(type);
+    }
+
+    const ops = type === 'mixed' ? ['+', '-', '×', '÷'] : [type];
+    const op = ops[Math.floor(Math.random() * ops.length)];
+    let a, b, answer;
+
+    switch (op) {
+      case '+':
+        a = Math.floor(Math.random() * 89) + 11;
+        b = Math.floor(Math.random() * 89) + 11;
+        answer = a + b;
+        break;
+      case '-':
+        a = Math.floor(Math.random() * 70) + 30;
+        b = Math.floor(Math.random() * (a - 15)) + 10;
+        answer = a - b;
+        break;
+      case '×':
+        a = Math.floor(Math.random() * 11) + 2;
+        b = Math.floor(Math.random() * 11) + 2;
+        answer = a * b;
+        break;
+      case '÷':
+        b = Math.floor(Math.random() * 10) + 2;
+        answer = Math.floor(Math.random() * 10) + 2;
+        a = b * answer;
+        break;
+    }
+
+    const distractors = new Set();
+    distractors.add(answer + 1);
+    distractors.add(answer - 1);
+    distractors.add(answer + 10);
+    while (distractors.size < 3) {
+      const offset = (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 5) + 2);
+      if (answer + offset !== answer) distractors.add(answer + offset);
+    }
+
+    const choices = Array.from(distractors).slice(0, 3);
+    choices.push(answer);
+    choices.sort(() => Math.random() - 0.5);
+
+    return {
+      prompt: `${a} ${op} ${b} = ?`,
+      correct: answer.toString(),
+      choices: choices.map(String)
+    };
+  }
+
+  function generateConversionQuestion(type) {
+    let mode = type;
+    if (type === 'all_conversions') {
+      const modes = ['dec_to_frac', 'frac_to_dec', 'dec_to_pct', 'pct_to_dec'];
+      mode = modes[Math.floor(Math.random() * modes.length)];
+    }
+
+    const target = BENCHMARKS[Math.floor(Math.random() * BENCHMARKS.length)];
+    let promptText = "";
+    let answerKey = "";
+    let distractorField = "";
+
+    switch (mode) {
+      case 'dec_to_frac':
+        promptText = target.dec + " as a fraction:";
+        answerKey = target.frac;
+        distractorField = 'frac';
+        break;
+      case 'frac_to_dec':
+        promptText = target.frac + " as a decimal:";
+        answerKey = target.dec;
+        distractorField = 'dec';
+        break;
+      case 'dec_to_pct':
+        promptText = target.dec + " as a percent:";
+        answerKey = target.pct;
+        distractorField = 'pct';
+        break;
+      case 'pct_to_dec':
+        promptText = target.pct + " as a decimal:";
+        answerKey = target.dec;
+        distractorField = 'dec';
+        break;
+    }
+
+    const distractors = new Set();
+    while (distractors.size < 3) {
+      const cand = BENCHMARKS[Math.floor(Math.random() * BENCHMARKS.length)][distractorField];
+      if (cand !== answerKey) distractors.add(cand);
+    }
+
+    const choices = Array.from(distractors);
+    choices.push(answerKey);
+    choices.sort(() => Math.random() - 0.5);
+
+    return {
+      prompt: promptText,
+      correct: answerKey,
+      choices: choices
+    };
+  }
+</script>
+</body>
+</html>
