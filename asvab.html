@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASVAB Mastery Test Bank & Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            navy: {
+              800: '#0f172a',
+              900: '#0a0f1d',
+              950: '#060913',
+            },
+            military: {
+              gold: '#eab308',
+              accent: '#3b82f6',
+              emerald: '#10b981',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom utility and touch styling */
+    .eliminated {
+      opacity: 0.45;
+      text-decoration: line-through;
+      filter: grayscale(80%);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(71, 85, 105, 0.7);
+      border-radius: 4px;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printableReport, #printableReport * {
+        visibility: visible;
+      }
+      #printableReport {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        color: black !important;
+        background: white !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col antialiased selection:bg-blue-600 selection:text-white">
+
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="app.showScreen('config')">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-black tracking-wider text-white shadow-lg shadow-blue-500/20">
+          ★
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            ASVAB <span class="text-blue-400 font-extrabold">PREP MASTER</span>
+          </h1>
+          <p class="text-[10px] text-slate-400 font-mono tracking-wider uppercase">Adaptive Adult Education Test Bank</p>
+        </div>
+      </div>
+
+      <!-- Header actions & quick status -->
+      <div class="flex items-center space-x-3">
+        <div id="activeTimerBadge" class="hidden items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs font-mono font-medium text-amber-400">
+          <svg class="w-4 h-4 animate-spin text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span id="headerTimerText">00:00</span>
+        </div>
+        <button onclick="app.toggleScratchpad()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-300 flex items-center gap-1.5 transition">
+          <svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          <span class="hidden sm:inline">Scratchpad</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col">
+
+    <!-- SCREEN 1: Configuration & Dashboard Hub -->
+    <section id="configScreen" class="space-y-8 max-w-4xl mx-auto w-full py-4">
+      <div class="bg-gradient-to-r from-blue-900/40 via-indigo-900/30 to-slate-900 border border-blue-800/40 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+        <div class="absolute -right-12 -top-12 w-48 h-48 bg-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="max-w-2xl">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 mb-3">
+            <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+            Military Enlistment Test Simulator
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Master the ASVAB with targeted practice.</h2>
+          <p class="text-slate-300 text-sm sm:text-base mt-2 leading-relaxed">
+            Constructed specifically for adult learners returning to core mathematics, reading mechanics, electrical theory, and technical comprehension. Choose instant pedagogical explanations or timed exam conditions.
+          </p>
+        </div>
+      </div>
+
+      <!-- Test Setup Panel -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
+        <h3 class="text-lg font-bold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
+          <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+          Session Configuration
+        </h3>
+
+        <!-- Mode Selection -->
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Practice Environment</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="relative flex flex-col p-4 rounded-xl border border-blue-600/60 bg-blue-950/20 hover:bg-blue-950/40 cursor-pointer transition select-none group has-[:checked]:border-blue-500 has-[:checked]:ring-2 has-[:checked]:ring-blue-500/20">
+              <input type="radio" name="testMode" value="practice" checked class="sr-only">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-white group-hover:text-blue-300">Practice Mode</span>
+                <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono">Feedback Enabled</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Instant answer verification, step-by-step adult-friendly breakdowns, formulas, and elimination tools.</p>
+            </label>
+            <label class="relative flex flex-col p-4 rounded-xl border border-slate-800 bg-slate-900/50 hover:bg-slate-800/60 cursor-pointer transition select-none group has-[:checked]:border-blue-500 has-[:checked]:ring-2 has-[:checked]:ring-blue-500/20">
+              <input type="radio" name="testMode" value="exam" class="sr-only">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sm text-white group-hover:text-blue-300">Timed Exam Mode</span>
+                <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono">Real ASVAB Timer</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Standardized timer, no immediate answers during testing. Detailed comprehensive score report upon completion.</p>
+            </label>
+          </div>
+        </div>
+
+        <!-- Filter Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
+          <!-- Subject selection -->
+          <div>
+            <label for="subjectFilter" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Subject Area</label>
+            <select id="subjectFilter" class="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="ALL">All Subjects (Full Battery)</option>
+              <option value="AFQT">AFQT Only (AR, MK, WK, PC)</option>
+              <option value="AR">Arithmetic Reasoning (AR)</option>
+              <option value="MK">Mathematics Knowledge (MK)</option>
+              <option value="WK">Word Knowledge (WK)</option>
+              <option value="PC">Paragraph Comprehension (PC)</option>
+              <option value="GS">General Science (GS)</option>
+              <option value="MC">Mechanical Comprehension (MC)</option>
+              <option value="EI">Electronics Information (EI)</option>
+              <option value="AS">Auto & Shop Information (AS)</option>
+            </select>
+          </div>
+
+          <!-- Difficulty selection -->
+          <div>
+            <label for="difficultyFilter" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Difficulty Level</label>
+            <select id="difficultyFilter" class="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="ALL">All Levels (Balanced Mix)</option>
+              <option value="Easy">Easy (Foundation & Core Concepts)</option>
+              <option value="Medium">Medium (Standard Enlistment Standard)</option>
+              <option value="Hard">Hard (Advanced Technical & Multistep)</option>
+            </select>
+          </div>
+
+          <!-- Question Count -->
+          <div>
+            <label for="countFilter" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Question Quantity</label>
+            <select id="countFilter" class="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="5">5 Quick Questions</option>
+              <option value="10" selected>10 Questions (Standard Quiz)</option>
+              <option value="15">15 Questions</option>
+              <option value="20">20 Full Session</option>
+              <option value="ALL">All Available Bank Questions</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Bank Quick Facts & Start Trigger -->
+        <div class="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800">
+          <div class="flex items-center gap-3 text-xs text-slate-400">
+            <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> 24+ Verified ASVAB Items</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-400"></span> 8 Subtests</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span> 3 Tiers</span>
+          </div>
+          <button onclick="app.startQuiz()" class="w-full sm:w-auto px-8 py-3.5 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] rounded-xl font-bold text-sm tracking-wide text-white shadow-lg shadow-blue-600/30 transition flex items-center justify-center gap-2">
+            <span>Begin Practice Session</span>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="quizScreen" class="hidden flex-1 flex-col max-w-4xl mx-auto w-full">
+      
+      <!-- Top Status & Progress Bar -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 mb-4 shadow-lg">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <span id="currentQuestionNum" class="text-sm font-extrabold text-blue-400 font-mono tracking-tight">Question 1 of 10</span>
+            <span id="badgeSubject" class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-slate-800 text-slate-300 border border-slate-700">AR</span>
+            <span id="badgeDifficulty" class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800">Easy</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="app.quitQuizConfirm()" class="text-xs px-3 py-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 transition border border-transparent hover:border-rose-900/40">
+              Exit
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress track -->
+        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+          <div id="progressBar" class="bg-gradient-to-r from-blue-600 to-indigo-500 h-full w-0 transition-all duration-300"></div>
+        </div>
+      </div>
+
+      <!-- Question Card -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl flex-1 flex flex-col justify-between">
+        <div>
+          <!-- Context / Reading passage block if present -->
+          <div id="passageBox" class="hidden mb-6 p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-300 text-sm leading-relaxed border-l-4 border-l-blue-500 font-serif"></div>
+
+          <!-- Main Question Text -->
+          <h3 id="questionText" class="text-base sm:text-xl font-medium text-white leading-relaxed mb-6"></h3>
+
+          <!-- Strike-through / Elimination helper callout -->
+          <div class="flex items-center justify-between text-xs text-slate-500 mb-3 px-1">
+            <span>Select an answer. Tip: Click the <span class="font-mono text-slate-400">✂ Strike</span> button to cross out wrong options.</span>
+          </div>
+
+          <!-- Options Container -->
+          <div id="optionsList" class="space-y-3">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Instant Feedback Card (For Practice Mode) -->
+        <div id="feedbackCard" class="hidden mt-6 pt-6 border-t border-slate-800">
+          <div id="feedbackAlert" class="p-4 sm:p-5 rounded-xl mb-4 border transition">
+            <div class="flex items-center gap-2 mb-2 font-bold text-sm" id="feedbackTitle"></div>
+            <div class="text-sm text-slate-300 leading-relaxed" id="feedbackBody"></div>
+
+            <!-- Key Takeaways & Formula Pill -->
+            <div id="formulaBox" class="mt-4 p-3 bg-slate-950/90 rounded-lg border border-slate-800/80">
+              <div class="text-xs font-mono font-bold text-blue-400 uppercase tracking-wide flex items-center gap-1.5 mb-1">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Core Formula & Takeaway
+              </div>
+              <div id="formulaText" class="text-xs text-slate-300 font-mono"></div>
+            </div>
+
+            <!-- Common Adult Learner Pitfall -->
+            <div id="pitfallBox" class="mt-2.5 p-3 bg-rose-950/20 rounded-lg border border-rose-900/30">
+              <div class="text-xs font-mono font-bold text-rose-400 uppercase tracking-wide flex items-center gap-1.5 mb-1">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Common Trap To Avoid
+              </div>
+              <div id="pitfallText" class="text-xs text-rose-200/90"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quiz Nav Footers -->
+        <div class="mt-8 pt-4 border-t border-slate-800/80 flex items-center justify-between gap-4">
+          <button id="btnPrev" onclick="app.prevQuestion()" class="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition disabled:opacity-30 disabled:pointer-events-none">
+            Previous
+          </button>
+          
+          <div class="flex items-center gap-3">
+            <button id="btnSubmitPractice" onclick="app.checkPracticeAnswer()" class="hidden px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-xs text-white transition shadow-md shadow-blue-600/30">
+              Check Answer
+            </button>
+            <button id="btnNext" onclick="app.nextQuestion()" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-xs text-white transition shadow-md shadow-blue-600/30 flex items-center gap-1.5 disabled:opacity-40">
+              <span id="nextButtonLabel">Next Question</span>
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="resultsScreen" class="hidden max-w-4xl mx-auto w-full space-y-6">
+      
+      <!-- Printable Report Container -->
+      <div id="printableReport" class="space-y-6">
+        
+        <!-- Score Overview Banner -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div>
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 mb-2">
+                Session Completed
+              </span>
+              <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Performance Scorecard</h2>
+              <p class="text-xs sm:text-sm text-slate-400 mt-1">Review your accuracy, estimate your AFQT readiness, and inspect missed questions.</p>
+            </div>
+            
+            <div class="flex items-center gap-4 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+              <div class="text-center">
+                <div id="scorePercentage" class="text-4xl sm:text-5xl font-black text-blue-400 font-mono">0%</div>
+                <div class="text-[10px] uppercase font-mono tracking-wider text-slate-400 mt-0.5">Overall Accuracy</div>
+              </div>
+              <div class="h-10 w-px bg-slate-800"></div>
+              <div class="text-center">
+                <div id="scoreFraction" class="text-xl sm:text-2xl font-bold text-white font-mono">0/0</div>
+                <div class="text-[10px] uppercase font-mono tracking-wider text-slate-400 mt-0.5">Correct Items</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AFQT Estimation Note -->
+          <div id="afqtInsight" class="mt-6 p-4 rounded-xl bg-blue-950/20 border border-blue-900/40 flex items-start gap-3">
+            <svg class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div class="text-xs text-slate-300 leading-relaxed">
+              <span class="font-bold text-blue-300">AFQT Qualification Insight:</span> 
+              <span id="afqtText">Standard armed forces enlistment requires an AFQT minimum between 31 and 36 points depending on branch. Your performance in Arithmetic Reasoning, Math Knowledge, and Word/Paragraph analysis is crucial.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Breakdown Grids -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- Subject Performance -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center justify-between">
+              <span>Subject Area Breakdown</span>
+              <span class="text-xs text-slate-400 font-normal">Score %</span>
+            </h3>
+            <div id="subjectBreakdownList" class="space-y-3.5">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Difficulty Breakdown -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center justify-between">
+              <span>Difficulty Stratification</span>
+              <span class="text-xs text-slate-400 font-normal">Score %</span>
+            </h3>
+            <div id="difficultyBreakdownList" class="space-y-3.5">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Review Section -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+            <div>
+              <h3 class="text-lg font-bold text-white">Itemized Question Review</h3>
+              <p class="text-xs text-slate-400">Step-by-step solutions for every test item from this attempt.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="app.filterReview('all')" id="btnReviewAll" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white transition">All Items</button>
+              <button onclick="app.filterReview('missed')" id="btnReviewMissed" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">Only Missed</button>
+            </div>
+          </div>
+
+          <div id="reviewItemsContainer" class="space-y-6">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Result Controls -->
+      <div class="flex flex-wrap items-center justify-between gap-4 py-4 no-print">
+        <button onclick="window.print()" class="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 flex items-center gap-2 transition">
+          <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          Print Score Report
+        </button>
+
+        <div class="flex items-center gap-3">
+          <button onclick="app.retakeSameQuiz()" class="px-5 py-2.5 rounded-xl border border-blue-500/40 bg-blue-950/40 hover:bg-blue-900/40 text-blue-300 text-xs font-bold transition">
+            Retake Same Questions
+          </button>
+          <button onclick="app.showScreen('config')" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-xs text-white shadow-lg shadow-blue-600/30 transition">
+            Start New Session
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="scratchpadDrawer" class="fixed bottom-4 right-4 z-50 w-80 sm:w-96 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden hidden flex-col">
+    <div class="bg-slate-800 px-4 py-2.5 flex items-center justify-between border-b border-slate-700">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        </svg>
+        <span class="text-xs font-bold text-white uppercase tracking-wider font-mono">Scratchpad / Quick Math</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button onclick="app.clearScratchpad()" class="text-[10px] text-slate-400 hover:text-rose-400 px-2 py-0.5 rounded transition">Clear</button>
+        <button onclick="app.toggleScratchpad()" class="text-slate-400 hover:text-white p-1 rounded">✕</button>
+      </div>
+    </div>
+    <div class="p-3 bg-slate-950">
+      <textarea id="scratchpadText" rows="6" placeholder="Use this space for rough arithmetic, notes, or cross-multiplying..." class="w-full bg-slate-900 text-slate-200 text-xs font-mono p-2.5 rounded-xl border border-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"></textarea>
+    </div>
+  </div>
+
+  <script>
+    const QUESTION_BANK = [
+      // ARITHMETIC REASONING (AR)
+      {
+        id: "ar-1",
+        subject: "AR",
+        subjectName: "Arithmetic Reasoning",
+        difficulty: "Easy",
+        question: "A military transport vehicle travels 180 miles on 12 gallons of diesel. At this constant fuel consumption rate, how many gallons are required to travel 300 miles?",
+        options: [
+          "16 gallons",
+          "20 gallons",
+          "24 gallons",
+          "25 gallons"
+        ],
+        correct: 1, // 20 gallons
+        explanation: "First, determine the unit rate (miles per gallon): 180 miles ÷ 12 gallons = 15 mpg. Next, divide the new target distance by the unit rate: 300 miles ÷ 15 mpg = 20 gallons.",
+        formula: "Unit Rate = Total Distance ÷ Total Gallons; Required Gallons = New Distance ÷ Unit Rate",
+        pitfall: "Do not multiply 300 by 12. Remember to set up a direct proportion: 180/12 = 300/x."
+      },
+      {
+        id: "ar-2",
+        subject: "AR",
+        subjectName: "Arithmetic Reasoning",
+        difficulty: "Medium",
+        question: "A field supply specialist orders tactical equipment with a regular catalog price of $450. The branch supplier provides a 20% military discount, but a 6% freight and handling charge is applied to the discounted price. What is the total final cost?",
+        options: [
+          "$360.00",
+          "$381.60",
+          "$387.00",
+          "$396.40"
+        ],
+        correct: 1, // $381.60
+        explanation: "Calculate the discounted price first: 20% discount on $450 = 0.20 × $450 = $90 off, leaving $450 - $90 = $360. Then calculate freight on the discounted amount: 6% of $360 = 0.06 × $360 = $21.60. Total = $360 + $21.60 = $381.60.",
+        formula: "Discounted Price = Original × (1 - 0.20); Total = Discounted Price × (1 + 0.06)",
+        pitfall: "Never combine percentages directly (20% - 6% = 14% is incorrect) because they apply to different base values."
+      },
+      {
+        id: "ar-3",
+        subject: "AR",
+        subjectName: "Arithmetic Reasoning",
+        difficulty: "Hard",
+        question: "Working alone, Technician A can completely inspect an aircraft engine in 6 hours. Technician B can perform the same full inspection in 4 hours. If both technicians work together simultaneously at their consistent rates, how long will the inspection take?",
+        options: [
+          "2 hours 12 minutes",
+          "2 hours 24 minutes",
+          "2 hours 30 minutes",
+          "5 hours"
+        ],
+        correct: 1, // 2 hours 24 minutes
+        explanation: "Find individual work rates per hour: Technician A completes 1/6 of the job per hour; Technician B completes 1/4 of the job per hour. Combined rate = 1/6 + 1/4 = 2/12 + 3/12 = 5/12 of the job per hour. Total time = 1 ÷ (5/12) = 12/5 hours = 2.4 hours. Convert 0.4 hours to minutes: 0.4 × 60 = 24 minutes. Total = 2 hours 24 minutes.",
+        formula: "Combined Time = (A × B) ÷ (A + B) = (6 × 4) ÷ (6 + 4) = 24 ÷ 10 = 2.4 hours",
+        pitfall: "Do not average the two times (6 + 4)/2 = 5 hours. Two people working together must take LESS time than the fastest individual."
+      },
+
+      // MATHEMATICS KNOWLEDGE (MK)
+      {
+        id: "mk-1",
+        subject: "MK",
+        subjectName: "Mathematics Knowledge",
+        difficulty: "Easy",
+        question: "If 4x - 9 = 27, what is the value of x?",
+        options: [
+          "6",
+          "7",
+          "9",
+          "12"
+        ],
+        correct: 2, // 9
+        explanation: "Isolate x step-by-step: 1) Add 9 to both sides: 4x = 27 + 9 = 36. 2) Divide both sides by 4: x = 36 ÷ 4 = 9.",
+        formula: "Linear Equation Solving: Perform inverse operations in reverse PEMDAS order.",
+        pitfall: "Remember to add 9 rather than subtract 9 from the right side."
+      },
+      {
+        id: "mk-2",
+        subject: "MK",
+        subjectName: "Mathematics Knowledge",
+        difficulty: "Medium",
+        question: "A right triangle has legs measuring 9 centimeters and 12 centimeters. What is the length of its hypotenuse?",
+        options: [
+          "14 cm",
+          "15 cm",
+          "18 cm",
+          "21 cm"
+        ],
+        correct: 1, // 15 cm
+        explanation: "Apply the Pythagorean Theorem: a² + b² = c². Here, 9² + 12² = 81 + 144 = 225. Take the square root: √225 = 15 cm. Notice this is also a 3-4-5 special right triangle scaled by a factor of 3 (3×3=9, 4×3=12, 5×3=15).",
+        formula: "Pythagorean Theorem: c = √(a² + b²)",
+        pitfall: "Don't add the leg lengths together directly (9 + 12 = 21 is wrong). Always square first."
+      },
+      {
+        id: "mk-3",
+        subject: "MK",
+        subjectName: "Mathematics Knowledge",
+        difficulty: "Hard",
+        question: "Factor the quadratic expression completely: 2x² + 7x - 15.",
+        options: [
+          "(2x - 3)(x + 5)",
+          "(2x + 3)(x - 5)",
+          "(2x - 5)(x + 3)",
+          "(2x + 1)(x - 15)"
+        ],
+        correct: 0, // (2x - 3)(x + 5)
+        explanation: "We look for factors of (a × c = 2 × -15 = -30) that add up to b = 7. Those factors are +10 and -3. Rewrite the middle term: 2x² + 10x - 3x - 15. Factor by grouping: 2x(x + 5) - 3(x + 5) = (2x - 3)(x + 5). Foil to check: 2x² + 10x - 3x - 15 = 2x² + 7x - 15.",
+        formula: "Factoring ax² + bx + c: Find two numbers whose product is ac and sum is b.",
+        pitfall: "Be careful with signs: (2x + 3)(x - 5) produces -7x instead of +7x."
+      },
+
+      // WORD KNOWLEDGE (WK)
+      {
+        id: "wk-1",
+        subject: "WK",
+        subjectName: "Word Knowledge",
+        difficulty: "Easy",
+        question: "The squad leader issued **concise** directives prior to the night patrol. The word **concise** most nearly means:",
+        options: [
+          "Brief and clear",
+          "Lengthy",
+          "Uncertain",
+          "Aggressive"
+        ],
+        correct: 0,
+        explanation: "'Concise' means giving a lot of information clearly and in few words; succinct or brief.",
+        formula: "Root: Latin 'concidere' (to cut down/cut short).",
+        pitfall: "Do not confuse concise with imprecise or vague."
+      },
+      {
+        id: "wk-2",
+        subject: "WK",
+        subjectName: "Word Knowledge",
+        difficulty: "Medium",
+        question: "The company commander decided to **relinquish** control of the forward operating base to Allied units. **Relinquish** most nearly means:",
+        options: [
+          "Strengthen",
+          "Surrender",
+          "Disguise",
+          "Acquire"
+        ],
+        correct: 1, // Surrender
+        explanation: "'Relinquish' means to voluntarily cease to keep or claim; to surrender or give up.",
+        formula: "Synonym association: Relinquish = Yield, Surrender, Cede.",
+        pitfall: "'Acquire' is the direct antonym (opposite), not the synonym."
+      },
+      {
+        id: "wk-3",
+        subject: "WK",
+        subjectName: "Word Knowledge",
+        difficulty: "Hard",
+        question: "The diagnostic system reported an **anomalous** sensor reading on hydraulic line three. **Anomalous** most nearly means:",
+        options: [
+          "Dependable",
+          "Periodic",
+          "Abnormal",
+          "Uniform"
+        ],
+        correct: 2, // Abnormal
+        explanation: "'Anomalous' means deviating from what is standard, normal, or expected; irregular or abnormal.",
+        formula: "Root: Greek 'anomalos' (uneven, irregular).",
+        pitfall: "Don't confuse 'anomalous' with 'anonymous' (unnamed)."
+      },
+
+      // PARAGRAPH COMPREHENSION (PC)
+      {
+        id: "pc-1",
+        subject: "PC",
+        subjectName: "Paragraph Comprehension",
+        difficulty: "Easy",
+        passage: "Routine maintenance of standard military generators requires oil inspection every 100 operating hours. When generators operate in desert climates with extreme dust, the interval must be reduced to 50 hours to prevent abrasive particulate build-up from scoring cylinder walls.",
+        question: "According to the passage, why must oil inspection intervals be shortened in desert conditions?",
+        options: [
+          "Extreme heat degrades motor oil viscosity immediately",
+          "Abrasive dust particles can damage engine cylinder walls",
+          "Fuel consumption increases significantly in sand",
+          "Generators produce higher wattage in dry climates"
+        ],
+        correct: 1,
+        explanation: "The passage directly states that in desert climates with extreme dust, the inspection must be reduced to 50 hours 'to prevent abrasive particulate build-up from scoring cylinder walls.'",
+        formula: "Direct Factual Extraction: Base answers strictly on explicitly stated details in the text.",
+        pitfall: "Avoid choosing statements that sound logically plausible (like oil thinning in heat) if the passage doesn't cite them as the reason."
+      },
+      {
+        id: "pc-2",
+        subject: "PC",
+        subjectName: "Paragraph Comprehension",
+        difficulty: "Medium",
+        passage: "Although radar detects targets through active radio frequency reflections, passive infrared sensors monitor thermal signatures emitted directly by an object. Consequently, passive systems do not disclose the sensor's own geographic location, making them ideal for covert reconnaissance operations where electronic emission control is vital.",
+        question: "It can be inferred from the text that a primary drawback of radar compared to passive infrared sensors is that radar:",
+        options: [
+          "Cannot function properly in nighttime conditions",
+          "Reveals the detector's presence by emitting radio signals",
+          "Only detects high-temperature heat signatures",
+          "Requires twice as much electrical voltage to operate"
+        ],
+        correct: 1,
+        explanation: "The author notes that passive systems 'do not disclose the sensor's own geographic location' because they don't emit waves, unlike active radar which relies on active radio frequency reflections and thus gives away its presence.",
+        formula: "Logical Inference: Contrast radar (active emissions) against passive infrared (silent monitoring).",
+        pitfall: "The passage mentions nothing about radar failing at night; do not introduce outside knowledge."
+      },
+      {
+        id: "pc-3",
+        subject: "PC",
+        subjectName: "Paragraph Comprehension",
+        difficulty: "Hard",
+        passage: "The advent of composite alloys in naval hull design provides substantial tensile strength while diminishing acoustic displacement. However, cathodic corrosion poses an accelerated threat when carbon composites bond with aluminum bulkheads in a saline marine environment unless an insulating dielectric barrier is rigorously maintained.",
+        question: "What is the author's primary attitude toward the use of carbon composite alloys in naval vessels?",
+        options: [
+          "Unreserved advocacy for immediate fleet-wide replacement",
+          "Cautious endorsement contingent upon protective insulation",
+          "Total rejection due to insurmountable corrosion hazards",
+          "Indifference toward structural metallurgy advances"
+        ],
+        correct: 1,
+        explanation: "The author acknowledges substantial benefits ('substantial tensile strength while diminishing acoustic displacement') but highlights a serious danger ('accelerated threat... unless an insulating dielectric barrier is rigorously maintained'). This reflects a balanced, cautious endorsement.",
+        formula: "Tone / Main Idea Synthesis: 'X has big advantages BUT requires strict precaution Y.'",
+        pitfall: "Extremes like 'unreserved advocacy' or 'total rejection' are rarely correct in formal ASVAB reading passages."
+      },
+
+      // GENERAL SCIENCE (GS)
+      {
+        id: "gs-1",
+        subject: "GS",
+        subjectName: "General Science",
+        difficulty: "Easy",
+        question: "Which organelle is recognized as the 'powerhouse of the cell' due to its role in cellular respiration and ATP energy generation?",
+        options: [
+          "Ribosome",
+          "Mitochondrion",
+          "Endoplasmic reticulum",
+          "Golgi apparatus"
+        ],
+        correct: 1, // Mitochondrion
+        explanation: "Mitochondria convert nutrients and glucose into adenosine triphosphate (ATP) through aerobic cellular respiration.",
+        formula: "Cellular Energy: C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + ATP",
+        pitfall: "Ribosomes manufacture proteins, whereas mitochondria generate cellular energy."
+      },
+      {
+        id: "gs-2",
+        subject: "GS",
+        subjectName: "General Science",
+        difficulty: "Medium",
+        question: "An object is dropped from a cliff in a vacuum (ignoring air resistance). What is its approximate downward velocity after falling freely for exactly 3 seconds under Earth's gravity?",
+        options: [
+          "9.8 m/s",
+          "19.6 m/s",
+          "29.4 m/s",
+          "44.1 m/s"
+        ],
+        correct: 2, // 29.4 m/s
+        explanation: "Velocity in free fall without air resistance is calculated by v = g × t, where acceleration due to gravity g ≈ 9.8 m/s². At 3 seconds: v = 9.8 × 3 = 29.4 m/s.",
+        formula: "Final Velocity: v = g × t (Distance fallen would be d = 0.5 × g × t² = 44.1 m)",
+        pitfall: "Do not confuse velocity (29.4 m/s) with distance fallen (44.1 meters)."
+      },
+      {
+        id: "gs-3",
+        subject: "GS",
+        subjectName: "General Science",
+        difficulty: "Hard",
+        question: "When hydrochloric acid (HCl) reacts with sodium hydroxide (NaOH) in an aqueous solution, the resulting products are:",
+        options: [
+          "Hydrogen gas and sodium chlorate",
+          "Sodium chloride (salt) and water",
+          "Sodium hydride and chlorine gas",
+          "Carbon dioxide and water"
+        ],
+        correct: 1, // NaCl and H2O
+        explanation: "This is a classic acid-base neutralization reaction: an acid (HCl) plus a base (NaOH) produces a salt (NaCl) and neutral water (H₂O).",
+        formula: "Neutralization Formula: Acid + Base → Salt + Water (HCl + NaOH → NaCl + H₂O)",
+        pitfall: "Neutralization reactions do not produce chlorine gas or carbon dioxide unless carbonates are involved."
+      },
+
+      // MECHANICAL COMPREHENSION (MC)
+      {
+        id: "mc-1",
+        subject: "MC",
+        subjectName: "Mechanical Comprehension",
+        difficulty: "Easy",
+        question: "In a class 1 lever, the fulcrum is situated directly in the middle between the effort and the load. If the effort arm is 4 feet long and the load arm is 2 feet long, what is the ideal mechanical advantage (IMA)?",
+        options: [
+          "0.5",
+          "2",
+          "4",
+          "8"
+        ],
+        correct: 1, // 2
+        explanation: "Ideal Mechanical Advantage of a lever equals the length of the effort arm divided by the length of the resistance (load) arm: IMA = Effort Arm / Load Arm = 4 ft / 2 ft = 2.",
+        formula: "IMA (Lever) = Effort Distance ÷ Resistance Distance",
+        pitfall: "Do not divide resistance by effort. Mechanical advantage greater than 1 multiplies user force."
+      },
+      {
+        id: "mc-2",
+        subject: "MC",
+        subjectName: "Mechanical Comprehension",
+        difficulty: "Medium",
+        question: "Drive Gear A has 12 teeth and rotates clockwise at 120 RPM. It meshes directly with Driven Gear B, which has 36 teeth. What is the rotational speed and direction of Gear B?",
+        options: [
+          "40 RPM, counter-clockwise",
+          "40 RPM, clockwise",
+          "360 RPM, counter-clockwise",
+          "360 RPM, clockwise"
+        ],
+        correct: 0, // 40 RPM, counter-clockwise
+        explanation: "Two meshed gears rotate in opposite directions, so if Gear A is clockwise, Gear B must turn counter-clockwise. To find speed: (Teeth A × RPM A) = (Teeth B × RPM B) → 12 × 120 = 36 × RPM B → 1440 = 36 × RPM B → RPM B = 1440 / 36 = 40 RPM.",
+        formula: "Gear Ratio Speed: Speed B = Speed A × (Teeth A ÷ Teeth B); Meshing gears reverse direction.",
+        pitfall: "A larger gear turns SLOWER than the smaller drive gear, not faster."
+      },
+      {
+        id: "mc-3",
+        subject: "MC",
+        subjectName: "Mechanical Comprehension",
+        difficulty: "Hard",
+        question: "A hydraulic lift system has a small input piston with an area of 4 square inches and a large output piston with an area of 80 square inches. If an input force of 50 pounds is applied to the small piston, how much weight can the large piston lift?",
+        options: [
+          "200 lbs",
+          "500 lbs",
+          "1,000 lbs",
+          "1,000 lbs" // Will adjust to distinct options below
+        ],
+        // fixing distinct options in array:
+        options: [
+          "200 lbs",
+          "500 lbs",
+          "1,000 lbs",
+          "1,600 lbs"
+        ],
+        correct: 2, // 1,000 lbs
+        explanation: "According to Pascal's Principle, pressure is equal throughout the enclosed fluid: P = F₁ / A₁ = F₂ / A₂. Pressure = 50 lbs / 4 sq in = 12.5 psi. Output force F₂ = Pressure × A₂ = 12.5 psi × 80 sq in = 1,000 lbs.",
+        formula: "Pascal's Law: F₂ = F₁ × (Area₂ ÷ Area₁) = 50 × (80 ÷ 4) = 50 × 20 = 1,000 lbs",
+        pitfall: "The mechanical advantage is the ratio of the areas (80/4 = 20), not the difference."
+      },
+
+      // ELECTRONICS INFORMATION (EI)
+      {
+        id: "ei-1",
+        subject: "EI",
+        subjectName: "Electronics Information",
+        difficulty: "Easy",
+        question: "A simple 12-volt DC automotive circuit operates with a lamp having a resistance of 4 ohms. What is the electric current flowing through this circuit?",
+        options: [
+          "2 amperes",
+          "3 amperes",
+          "8 amperes",
+          "48 amperes"
+        ],
+        correct: 1, // 3 amperes
+        explanation: "By Ohm's Law: Current (I) = Voltage (V) ÷ Resistance (R). I = 12 V ÷ 4 Ω = 3 Amperes.",
+        formula: "Ohm's Law: V = I × R → I = V / R",
+        pitfall: "Do not multiply voltage by resistance; that would yield 48, which is mathematically invalid for current."
+      },
+      {
+        id: "ei-2",
+        subject: "EI",
+        subjectName: "Electronics Information",
+        difficulty: "Medium",
+        question: "Three resistors with values of 10 ohms, 20 ohms, and 30 ohms are connected together in a single continuous series circuit. What is the total equivalent resistance?",
+        options: [
+          "5.45 ohms",
+          "30 ohms",
+          "60 ohms",
+          "600 ohms"
+        ],
+        correct: 2, // 60 ohms
+        explanation: "In a series circuit, total resistance is simply the direct sum of all individual resistors: R_total = R₁ + R₂ + R₃ = 10 + 20 + 30 = 60 ohms.",
+        formula: "Series Resistance: R_total = R₁ + R₂ + R₃ + ...",
+        pitfall: "Do not use the reciprocal formula (1/R_total = 1/R₁ + 1/R₂...); that reciprocal rule is strictly for parallel circuits."
+      },
+      {
+        id: "ei-3",
+        subject: "EI",
+        subjectName: "Electronics Information",
+        difficulty: "Hard",
+        question: "Which semiconductor component allows current to flow in one direction only and is commonly used in bridge configurations to convert alternating current (AC) to direct current (DC)?",
+        options: [
+          "Capacitor",
+          "Diode",
+          "Inductor",
+          "Rheostat"
+        ],
+        correct: 1, // Diode
+        explanation: "A diode permits current flow freely in the forward-biased direction while blocking reverse current. When arranged in a bridge rectifier, four diodes convert AC power into pulsating DC power.",
+        formula: "Rectification: Diodes conduct when forward-biased (anode positive relative to cathode).",
+        pitfall: "Capacitors filter voltage ripples and store electrostatic charge, but diodes perform the actual one-way rectification."
+      },
+
+      // AUTO & SHOP INFORMATION (AS)
+      {
+        id: "as-1",
+        subject: "AS",
+        subjectName: "Auto & Shop Information",
+        difficulty: "Easy",
+        question: "Which precision hand tool consists of thin, calibrated steel blades and is specifically used to measure narrow gaps, such as spark plug electrode clearances?",
+        options: [
+          "Feeler gauge",
+          "Torque wrench",
+          "Chalk line",
+          "C-clamp"
+        ],
+        correct: 0, // Feeler gauge
+        explanation: "A feeler gauge is composed of calibrated steel strips of varying thicknesses marked in thousandths of an inch or millimeters, engineered specifically to test small clearances.",
+        formula: "Tool identification: Feeler gauge = gap and clearance inspection.",
+        pitfall: "A torque wrench measures rotational fastener tightness (foot-pounds), not gap distance."
+      },
+      {
+        id: "as-2",
+        subject: "AS",
+        subjectName: "Auto & Shop Information",
+        difficulty: "Medium",
+        question: "In a standard four-stroke internal combustion gasoline engine, what is the exact chronological sequence of the operating strokes?",
+        options: [
+          "Compression, Intake, Exhaust, Power",
+          "Intake, Compression, Power, Exhaust",
+          "Power, Intake, Compression, Exhaust",
+          "Intake, Power, Compression, Exhaust"
+        ],
+        correct: 1, // Intake, Compression, Power, Exhaust
+        explanation: "The four strokes occur in order: 1) Intake (draws air-fuel mixture), 2) Compression (compresses mixture), 3) Power (spark ignites fuel, driving piston downward), 4) Exhaust (scavenges burned gases out).",
+        formula: "The 4-Stroke Cycle: 'Suck, Squeeze, Bang, Blow' (Intake, Compression, Power, Exhaust).",
+        pitfall: "Power cannot occur before compression, because fuel must be compressed to deliver mechanical energy upon ignition."
+      },
+      {
+        id: "as-3",
+        subject: "AS",
+        subjectName: "Auto & Shop Information",
+        difficulty: "Hard",
+        question: "When cutting external screw threads onto a cylindrical metal rod or bolt blank, which shop tool must be used?",
+        options: [
+          "Tap",
+          "Die",
+          "Reamer",
+          "Broach"
+        ],
+        correct: 1, // Die
+        explanation: "A die (held in a die stock) cuts male (external) threads onto rods. Conversely, a tap cuts female (internal) threads inside drilled holes.",
+        formula: "Shop Rule: 'Tap the Hole (Inside), Die the Rod (Outside)'",
+        pitfall: "Remembering 'Tap = Internal' vs 'Die = External' is one of the most frequently missed questions on the ASVAB shop subtest."
+      }
+    ];
+  </script>
+
+  <script>
+    class ASVABApp {
+      constructor() {
+        this.questions = [];
+        this.currentIndex = 0;
+        this.userAnswers = {}; // { questionId: { selectedOption: number, isCorrect: boolean, eliminated: [indexes] } }
+        this.eliminations = {}; // { questionIndex: Set of eliminated option indexes }
+        this.mode = 'practice'; // 'practice' | 'exam'
+        this.timerSeconds = 0;
+        this.timerInterval = null;
+        this.reviewFilter = 'all'; // 'all' | 'missed'
+
+        this.initDOM();
+      }
+
+      initDOM() {
+        // Mode radio toggle listener
+        document.querySelectorAll('input[name="testMode"]').forEach(radio => {
+          radio.addEventListener('change', (e) => {
+            this.mode = e.target.value;
+          });
+        });
+      }
+
+      showScreen(screenName) {
+        document.getElementById('configScreen').classList.add('hidden');
+        document.getElementById('quizScreen').classList.add('hidden');
+        document.getElementById('resultsScreen').classList.add('hidden');
+
+        if (screenName === 'config') {
+          this.stopTimer();
+          document.getElementById('activeTimerBadge').classList.add('hidden');
+          document.getElementById('configScreen').classList.remove('hidden');
+        } else if (screenName === 'quiz') {
+          document.getElementById('quizScreen').classList.remove('hidden');
+        } else if (screenName === 'results') {
+          this.stopTimer();
+          document.getElementById('activeTimerBadge').classList.add('hidden');
+          document.getElementById('resultsScreen').classList.remove('hidden');
+          this.renderResults();
+        }
+      }
+
+      startQuiz() {
+        const subject = document.getElementById('subjectFilter').value;
+        const difficulty = document.getElementById('difficultyFilter').value;
+        const countValue = document.getElementById('countFilter').value;
+        const selectedMode = document.querySelector('input[name="testMode"]:checked').value;
+        this.mode = selectedMode;
+
+        // Filter question bank
+        let filtered = [...QUESTION_BANK];
+
+        if (subject === 'AFQT') {
+          filtered = filtered.filter(q => ['AR', 'MK', 'WK', 'PC'].includes(q.subject));
+        } else if (subject !== 'ALL') {
+          filtered = filtered.filter(q => q.subject === subject);
+        }
+
+        if (difficulty !== 'ALL') {
+          filtered = filtered.filter(q => q.difficulty === difficulty);
+        }
+
+        // Shuffle questions
+        filtered.sort(() => Math.random() - 0.5);
+
+        // Limit question count
+        const totalAvailable = filtered.length;
+        if (totalAvailable === 0) {
+          alert("No questions match your exact combination. Please broaden your filters.");
+          return;
+        }
+
+        let desiredCount = countValue === 'ALL' ? totalAvailable : parseInt(countValue, 10);
+        this.questions = filtered.slice(0, Math.min(desiredCount, totalAvailable));
+
+        // Reset state
+        this.currentIndex = 0;
+        this.userAnswers = {};
+        this.eliminations = {};
+        for (let i = 0; i < this.questions.length; i++) {
+          this.eliminations[i] = new Set();
+        }
+
+        // Setup timer for exam mode
+        if (this.mode === 'exam') {
+          this.timerSeconds = this.questions.length * 90; // 1.5 minutes per question standard
+          document.getElementById('activeTimerBadge').classList.remove('hidden');
+          document.getElementById('activeTimerBadge').classList.add('flex');
+          this.startTimer();
+        } else {
+          document.getElementById('activeTimerBadge').classList.add('hidden');
+          this.stopTimer();
+        }
+
+        this.showScreen('quiz');
+        this.loadQuestion(0);
+      }
+
+      startTimer() {
+        this.stopTimer();
+        this.updateTimerDisplay();
+        this.timerInterval = setInterval(() => {
+          this.timerSeconds--;
+          this.updateTimerDisplay();
+          if (this.timerSeconds <= 0) {
+            this.stopTimer();
+            alert("Time has expired! Submitting your examination answers for assessment.");
+            this.showScreen('results');
+          }
+        }, 1000);
+      }
+
+      stopTimer() {
+        if (this.timerInterval) {
+          clearInterval(this.timerInterval);
+          this.timerInterval = null;
+        }
+      }
+
+      updateTimerDisplay() {
+        const m = Math.floor(this.timerSeconds / 60);
+        const s = this.timerSeconds % 60;
+        document.getElementById('headerTimerText').textContent = 
+          `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      }
+
+      loadQuestion(index) {
+        this.currentIndex = index;
+        const q = this.questions[index];
+
+        // Update progress indicators
+        const progressPercent = ((index + 1) / this.questions.length) * 100;
+        document.getElementById('progressBar').style.width = `${progressPercent}%`;
+        document.getElementById('currentQuestionNum').textContent = `Question ${index + 1} of ${this.questions.length}`;
+        
+        // Subject Badge
+        document.getElementById('badgeSubject').textContent = `${q.subject} • ${q.subjectName}`;
+
+        // Difficulty Badge styling
+        const diffBadge = document.getElementById('badgeDifficulty');
+        diffBadge.textContent = q.difficulty;
+        diffBadge.className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold border ';
+        if (q.difficulty === 'Easy') {
+          diffBadge.className += 'bg-emerald-950/60 text-emerald-400 border-emerald-800';
+        } else if (q.difficulty === 'Medium') {
+          diffBadge.className += 'bg-amber-950/60 text-amber-400 border-amber-800';
+        } else {
+          diffBadge.className += 'bg-rose-950/60 text-rose-400 border-rose-800';
+        }
+
+        // Passage box (if paragraph comprehension)
+        const passageBox = document.getElementById('passageBox');
+        if (q.passage) {
+          passageBox.textContent = `"${q.passage}"`;
+          passageBox.classList.remove('hidden');
+        } else {
+          passageBox.classList.add('hidden');
+        }
+
+        // Question text
+        document.getElementById('questionText').textContent = q.question;
+
+        // Render options list
+        const optionsList = document.getElementById('optionsList');
+        optionsList.innerHTML = '';
+
+        const answeredData = this.userAnswers[q.id];
+        const isAnswered = answeredData !== undefined;
+        const currentElims = this.eliminations[index] || new Set();
+
+        const letters = ['A', 'B', 'C', 'D'];
+
+        q.options.forEach((optText, optIdx) => {
+          const isSelected = isAnswered && answeredData.selectedOption === optIdx;
+          const isEliminated = currentElims.has(optIdx);
+
+          const wrapper = document.createElement('div');
+          wrapper.className = `group flex items-center justify-between p-3.5 sm:p-4 rounded-xl border transition cursor-pointer select-none ${
+            isSelected 
+              ? 'bg-blue-900/40 border-blue-500 shadow-md ring-1 ring-blue-500/50' 
+              : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-800/40'
+          } ${isEliminated ? 'eliminated' : ''}`;
+
+          // Option content button (left)
+          const contentDiv = document.createElement('div');
+          contentDiv.className = 'flex items-center gap-3.5 flex-1 pr-2';
+          contentDiv.innerHTML = `
+            <span class="w-8 h-8 rounded-lg flex items-center justify-center font-mono text-xs font-bold border ${
+              isSelected
+                ? 'bg-blue-600 text-white border-blue-400'
+                : 'bg-slate-800 text-slate-300 border-slate-700 group-hover:border-slate-600'
+            }">${letters[optIdx]}</span>
+            <span class="text-sm sm:text-base font-medium text-slate-200 group-hover:text-white">${optText}</span>
+          `;
+
+          contentDiv.onclick = () => {
+            if (this.mode === 'practice' && isAnswered) return; // locked in practice once revealed
+            this.selectOption(optIdx);
+          };
+
+          // Elimination tool button (right)
+          const elimBtn = document.createElement('button');
+          elimBtn.type = 'button';
+          elimBtn.className = `p-1.5 rounded-lg text-[11px] font-mono border transition flex items-center gap-1 ${
+            isEliminated 
+              ? 'bg-rose-950/60 text-rose-400 border-rose-800 hover:bg-rose-900/50' 
+              : 'bg-slate-800/60 text-slate-400 border-slate-700 hover:text-slate-200 hover:bg-slate-700/60'
+          }`;
+          elimBtn.title = "Strike through option to eliminate";
+          elimBtn.innerHTML = `
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            <span class="hidden sm:inline">${isEliminated ? 'Restore' : 'Strike'}</span>
+          `;
+          elimBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.toggleEliminateOption(optIdx);
+          };
+
+          wrapper.appendChild(contentDiv);
+          wrapper.appendChild(elimBtn);
+          optionsList.appendChild(wrapper);
+        });
+
+        // Configure buttons and feedback according to mode
+        const feedbackCard = document.getElementById('feedbackCard');
+        const btnPrev = document.getElementById('btnPrev');
+        const btnNext = document.getElementById('btnNext');
+        const nextButtonLabel = document.getElementById('nextButtonLabel');
+        const btnSubmitPractice = document.getElementById('btnSubmitPractice');
+
+        btnPrev.disabled = index === 0;
+
+        if (index === this.questions.length - 1) {
+          nextButtonLabel.textContent = "Finish & Review";
+        } else {
+          nextButtonLabel.textContent = "Next Question";
+        }
+
+        if (this.mode === 'practice') {
+          if (isAnswered) {
+            feedbackCard.classList.remove('hidden');
+            btnSubmitPractice.classList.add('hidden');
+            btnNext.disabled = false;
+            this.renderFeedbackCard(q, answeredData);
+          } else {
+            feedbackCard.classList.add('hidden');
+            btnSubmitPractice.classList.remove('hidden');
+            btnSubmitPractice.disabled = answeredData === undefined;
+            btnNext.disabled = true; // force answering in practice
+          }
+        } else {
+          // Exam mode: no feedback displayed during active run
+          feedbackCard.classList.add('hidden');
+          btnSubmitPractice.classList.add('hidden');
+          btnNext.disabled = false;
+        }
+      }
+
+      toggleEliminateOption(optionIndex) {
+        const set = this.eliminations[this.currentIndex];
+        if (set.has(optionIndex)) {
+          set.delete(optionIndex);
+        } else {
+          set.add(optionIndex);
+        }
+        this.loadQuestion(this.currentIndex);
+      }
+
+      selectOption(optionIndex) {
+        const q = this.questions[this.currentIndex];
+        const isCorrect = optionIndex === q.correct;
+        
+        this.userAnswers[q.id] = {
+          selectedOption: optionIndex,
+          isCorrect: isCorrect
+        };
+
+        if (this.mode === 'practice') {
+          document.getElementById('btnSubmitPractice').disabled = false;
+          // Re-render to show selection highlight before submission
+          this.loadQuestion(this.currentIndex);
+        } else {
+          this.loadQuestion(this.currentIndex);
+        }
+      }
+
+      checkPracticeAnswer() {
+        const q = this.questions[this.currentIndex];
+        const answered = this.userAnswers[q.id];
+        if (!answered) return;
+
+        this.loadQuestion(this.currentIndex);
+      }
+
+      renderFeedbackCard(question, answeredData) {
+        const alertBox = document.getElementById('feedbackAlert');
+        const title = document.getElementById('feedbackTitle');
+        const body = document.getElementById('feedbackBody');
+        const formulaText = document.getElementById('formulaText');
+        const pitfallText = document.getElementById('pitfallText');
+
+        const letters = ['A', 'B', 'C', 'D'];
+        const isRight = answeredData.isCorrect;
+
+        if (isRight) {
+          alertBox.className = 'p-4 sm:p-5 rounded-xl mb-4 border bg-emerald-950/30 border-emerald-800 text-emerald-300';
+          title.innerHTML = `
+            <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Correct! Option ${letters[question.correct]}: ${question.options[question.correct]}
+          `;
+        } else {
+          alertBox.className = 'p-4 sm:p-5 rounded-xl mb-4 border bg-rose-950/30 border-rose-900/60 text-rose-300';
+          title.innerHTML = `
+            <svg class="w-5 h-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Incorrect. Correct Answer: Option ${letters[question.correct]} (${question.options[question.correct]})
+          `;
+        }
+
+        body.textContent = question.explanation;
+        formulaText.textContent = question.formula || "Standard formula applied.";
+        pitfallText.textContent = question.pitfall || "Ensure close reading of all question units and constraints.";
+      }
+
+      nextQuestion() {
+        if (this.currentIndex < this.questions.length - 1) {
+          this.loadQuestion(this.currentIndex + 1);
+        } else {
+          // Finished
+          this.showScreen('results');
+        }
+      }
+
+      prevQuestion() {
+        if (this.currentIndex > 0) {
+          this.loadQuestion(this.currentIndex - 1);
+        }
+      }
+
+      quitQuizConfirm() {
+        if (confirm("Are you sure you want to exit? Your current test session progress will be lost.")) {
+          this.showScreen('config');
+        }
+      }
+
+      renderResults() {
+        let total = this.questions.length;
+        let correctCount = 0;
+
+        const subjectStats = {};
+        const diffStats = {
+          Easy: { correct: 0, total: 0 },
+          Medium: { correct: 0, total: 0 },
+          Hard: { correct: 0, total: 0 }
+        };
+
+        this.questions.forEach(q => {
+          // Initialize subject
+          if (!subjectStats[q.subject]) {
+            subjectStats[q.subject] = { name: q.subjectName, correct: 0, total: 0 };
+          }
+          subjectStats[q.subject].total++;
+          diffStats[q.difficulty].total++;
+
+          const ans = this.userAnswers[q.id];
+          if (ans && ans.isCorrect) {
+            correctCount++;
+            subjectStats[q.subject].correct++;
+            diffStats[q.difficulty].correct++;
+          }
+        });
+
+        const percent = Math.round((correctCount / total) * 100);
+        document.getElementById('scorePercentage').textContent = `${percent}%`;
+        document.getElementById('scoreFraction').textContent = `${correctCount}/${total}`;
+
+        // AFQT interpretation update
+        const afqtText = document.getElementById('afqtText');
+        if (percent >= 70) {
+          afqtText.innerHTML = `<strong>Strong Performance!</strong> You scored ${percent}%, indicating a high probability of clearing military AFQT benchmarks (Army/Navy/Air Force min. 31-36). Your solid grasp across fundamentals qualifies you for a broad selection of technical ratings and MOS options.`;
+        } else if (percent >= 50) {
+          afqtText.innerHTML = `<strong>Competitive Foundation!</strong> At ${percent}%, you meet general qualifications for many enlistment programs, but continued drill in multi-step Arithmetic Reasoning and technical vocabulary will unlock higher-tier technical jobs.`;
+        } else {
+          afqtText.innerHTML = `<strong>Targeted Review Recommended:</strong> At ${percent}%, focus your study routine on core mental math, algebraic formulas, and root words to ensure you comfortably surpass the 31-point AFQT baseline on test day.`;
+        }
+
+        // Render Subject breakdown
+        const subjectList = document.getElementById('subjectBreakdownList');
+        subjectList.innerHTML = '';
+        for (const key in subjectStats) {
+          const s = subjectStats[key];
+          const pct = Math.round((s.correct / s.total) * 100);
+          const row = document.createElement('div');
+          row.className = 'space-y-1';
+          row.innerHTML = `
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300 font-medium">${key} (${s.name})</span>
+              <span class="font-mono text-slate-400">${s.correct}/${s.total} (${pct}%)</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div class="bg-blue-500 h-full rounded-full" style="width: ${pct}%"></div>
+            </div>
+          `;
+          subjectList.appendChild(row);
+        }
+
+        // Render Difficulty breakdown
+        const diffList = document.getElementById('difficultyBreakdownList');
+        diffList.innerHTML = '';
+        ['Easy', 'Medium', 'Hard'].forEach(level => {
+          const d = diffStats[level];
+          if (d.total === 0) return;
+          const pct = Math.round((d.correct / d.total) * 100);
+          const colorClass = level === 'Easy' ? 'bg-emerald-500' : level === 'Medium' ? 'bg-amber-500' : 'bg-rose-500';
+
+          const row = document.createElement('div');
+          row.className = 'space-y-1';
+          row.innerHTML = `
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300 font-medium">${level} Difficulty</span>
+              <span class="font-mono text-slate-400">${d.correct}/${d.total} (${pct}%)</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div class="${colorClass} h-full rounded-full" style="width: ${pct}%"></div>
+            </div>
+          `;
+          diffList.appendChild(row);
+        });
+
+        // Render Itemized Review list
+        this.renderReviewItems();
+      }
+
+      filterReview(type) {
+        this.reviewFilter = type;
+        const btnAll = document.getElementById('btnReviewAll');
+        const btnMissed = document.getElementById('btnReviewMissed');
+
+        if (type === 'all') {
+          btnAll.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white transition';
+          btnMissed.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
+        } else {
+          btnMissed.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white transition';
+          btnAll.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
+        }
+
+        this.renderReviewItems();
+      }
+
+      renderReviewItems() {
+        const container = document.getElementById('reviewItemsContainer');
+        container.innerHTML = '';
+        const letters = ['A', 'B', 'C', 'D'];
+
+        let displayItems = this.questions;
+        if (this.reviewFilter === 'missed') {
+          displayItems = this.questions.filter(q => {
+            const ans = this.userAnswers[q.id];
+            return !ans || !ans.isCorrect;
+          });
+        }
+
+        if (displayItems.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-8 text-slate-400 text-sm">
+              <span class="text-emerald-400 font-bold block mb-1">Clean Slate!</span>
+              No missed questions found under this filter. Great job!
+            </div>
+          `;
+          return;
+        }
+
+        displayItems.forEach((q, idx) => {
+          const ans = this.userAnswers[q.id];
+          const isCorrect = ans ? ans.isCorrect : false;
+          const userChoice = ans && ans.selectedOption !== undefined ? letters[ans.selectedOption] : 'None';
+
+          const card = document.createElement('div');
+          card.className = `p-5 rounded-2xl border ${
+            isCorrect ? 'bg-slate-950/60 border-slate-800' : 'bg-rose-950/10 border-rose-900/40'
+          }`;
+
+          card.innerHTML = `
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-xs font-bold text-slate-400">#${idx + 1}</span>
+                <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">${q.subject}</span>
+                <span class="text-xs px-2 py-0.5 rounded font-mono ${
+                  q.difficulty === 'Easy' ? 'text-emerald-400 bg-emerald-950/40' : q.difficulty === 'Medium' ? 'text-amber-400 bg-amber-950/40' : 'text-rose-400 bg-rose-950/40'
+                }">${q.difficulty}</span>
+              </div>
+              <span class="text-xs font-mono font-bold px-2 py-0.5 rounded ${
+                isCorrect ? 'text-emerald-400 bg-emerald-950/40 border border-emerald-800/40' : 'text-rose-400 bg-rose-950/40 border border-rose-800/40'
+              }">${isCorrect ? '✓ Correct' : '✕ Missed'}</span>
+            </div>
+
+            ${q.passage ? `<div class="mb-3 p-3 rounded-lg bg-slate-900/80 border border-slate-800 text-xs italic text-slate-300 font-serif">"${q.passage}"</div>` : ''}
+
+            <p class="text-sm font-medium text-slate-200 mb-4">${q.question}</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs mb-4">
+              <div class="p-2.5 rounded-lg border ${
+                ans && ans.selectedOption === q.correct ? 'bg-emerald-950/40 border-emerald-700 text-emerald-300' : 'bg-slate-900 border-slate-800 text-slate-400'
+              }">
+                <span class="font-bold">Your Answer:</span> ${userChoice} ${ans && ans.selectedOption !== undefined ? `(${q.options[ans.selectedOption]})` : '(Unanswered)'}
+              </div>
+              <div class="p-2.5 rounded-lg border bg-emerald-950/30 border-emerald-800 text-emerald-300">
+                <span class="font-bold">Correct:</span> Option ${letters[q.correct]} (${q.options[q.correct]})
+              </div>
+            </div>
+
+            <div class="bg-slate-900/90 rounded-xl p-3.5 border border-slate-800 text-xs text-slate-300 space-y-2">
+              <div><strong class="text-blue-400 font-mono">EXPLANATION:</strong> ${q.explanation}</div>
+              <div class="pt-1 border-t border-slate-800/60 text-slate-400"><strong class="text-slate-300 font-mono">FORMULA:</strong> ${q.formula}</div>
+              <div class="pt-1 border-t border-slate-800/60 text-rose-300/80"><strong class="text-rose-400 font-mono">AVOID THIS TRAP:</strong> ${q.pitfall}</div>
+            </div>
+          `;
+
+          container.appendChild(card);
+        });
+      }
+
+      retakeSameQuiz() {
+        // Reset answers and re-run identical question set
+        this.currentIndex = 0;
+        this.userAnswers = {};
+        for (let i = 0; i < this.questions.length; i++) {
+          this.eliminations[i] = new Set();
+        }
+
+        if (this.mode === 'exam') {
+          this.timerSeconds = this.questions.length * 90;
+          this.startTimer();
+          document.getElementById('activeTimerBadge').classList.remove('hidden');
+          document.getElementById('activeTimerBadge').classList.add('flex');
+        }
+
+        this.showScreen('quiz');
+        this.loadQuestion(0);
+      }
+
+      toggleScratchpad() {
+        const drawer = document.getElementById('scratchpadDrawer');
+        drawer.classList.toggle('hidden');
+        drawer.classList.toggle('flex');
+        if (!drawer.classList.contains('hidden')) {
+          document.getElementById('scratchpadText').focus();
+        }
+      }
+
+      clearScratchpad() {
+        document.getElementById('scratchpadText').value = '';
+      }
+    }
+
+    // Initialize application instance on DOM load
+    let app;
+    window.addEventListener('DOMContentLoaded', () => {
+      app = new ASVABApp();
+    });
+  </script>
+</body>
+</html>
